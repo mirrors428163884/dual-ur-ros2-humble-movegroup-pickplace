@@ -51,6 +51,7 @@ ament_target_dependencies(
   jointprinter
   "moveit_ros_planning_interface"
   "rclcpp"
+  "control_msgs"
 )
 install(TARGETS jointprinter
   DESTINATION lib/${PROJECT_NAME})
