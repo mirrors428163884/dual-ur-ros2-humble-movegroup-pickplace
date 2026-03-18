@@ -1,0 +1,505 @@
+format: "xrdf"
+
+format_version: 1.0
+
+default_joint_positions: 
+  left_shoulder_pan_joint: 0.0
+  left_shoulder_lift_joint: 0.0
+  left_elbow_joint: 0.0
+  left_wrist_1_joint: 0.0
+  left_wrist_2_joint: 0.0
+  left_wrist_3_joint: 0.0
+
+
+cspace: 
+  joint_names: 
+    - "left_shoulder_pan_joint"
+    - "left_shoulder_lift_joint"
+    - "left_elbow_joint"
+    - "left_wrist_1_joint"
+    - "left_wrist_2_joint"
+    - "left_wrist_3_joint"
+  acceleration_limits: [10, 10, 10, 10, 10, 10]
+  jerk_limits: [10000, 10000, 10000, 10000, 10000, 10000]
+
+
+tool_frames: ["left_ee_link"]
+
+
+collision: 
+  geometry: "auto_generated_collision_sphere_group"
+
+self_collision: 
+  geometry: "auto_generated_collision_sphere_group"
+  ignore:
+    base_left:
+      - "base_link"
+      - "base_right"
+      - "left_base_link_inertia"
+      - "left_shoulder_link"
+      - "left_wrist_1_link"
+      - "right_base_link_inertia"
+      - "right_shoulder_link"
+      - "right_upper_arm_link"
+    base_link:
+      - "base_right"
+      - "left_base_link_inertia"
+      - "left_shoulder_link"
+      - "right_base_link_inertia"
+      - "right_shoulder_link"
+    base_right:
+      - "left_base_link_inertia"
+      - "left_shoulder_link"
+      - "left_upper_arm_link"
+      - "right_base_link_inertia"
+      - "right_shoulder_link"
+      - "right_wrist_1_link"
+    left_base_link_inertia:
+      - "left_shoulder_link"
+      - "left_upper_arm_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "right_base_link_inertia"
+      - "right_shoulder_link"
+      - "right_upper_arm_link"
+    left_camera_baselink:
+      - "left_camera_link"
+      - "left_robotiq_85_base_link"
+      - "left_robotiq_85_left_finger_link"
+      - "left_robotiq_85_left_finger_tip_link"
+      - "left_robotiq_85_left_inner_knuckle_link"
+      - "left_robotiq_85_left_knuckle_link"
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_robotiq_85_right_knuckle_link"
+    left_camera_link:
+      - "left_robotiq_85_base_link"
+      - "left_robotiq_85_left_finger_link"
+      - "left_robotiq_85_left_finger_tip_link"
+      - "left_robotiq_85_left_inner_knuckle_link"
+      - "left_robotiq_85_left_knuckle_link"
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_camera_link"
+      - "right_robotiq_85_left_finger_link"
+      - "right_robotiq_85_left_knuckle_link"
+    left_forearm_link:
+      - "left_upper_arm_link"
+      - "left_wrist_1_link"
+    left_robotiq_85_base_link:
+      - "left_robotiq_85_left_finger_link"
+      - "left_robotiq_85_left_finger_tip_link"
+      - "left_robotiq_85_left_inner_knuckle_link"
+      - "left_robotiq_85_left_knuckle_link"
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+    left_robotiq_85_left_finger_link:
+      - "left_robotiq_85_left_finger_tip_link"
+      - "left_robotiq_85_left_inner_knuckle_link"
+      - "left_robotiq_85_left_knuckle_link"
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+    left_robotiq_85_left_finger_tip_link:
+      - "left_robotiq_85_left_inner_knuckle_link"
+      - "left_robotiq_85_left_knuckle_link"
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_robotiq_85_left_knuckle_link"
+    left_robotiq_85_left_inner_knuckle_link:
+      - "left_robotiq_85_left_knuckle_link"
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+    left_robotiq_85_left_knuckle_link:
+      - "left_robotiq_85_right_finger_link"
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_camera_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+    left_robotiq_85_right_finger_link:
+      - "left_robotiq_85_right_finger_tip_link"
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_knuckle_link"
+    left_robotiq_85_right_finger_tip_link:
+      - "left_robotiq_85_right_inner_knuckle_link"
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_robotiq_85_right_knuckle_link"
+    left_robotiq_85_right_inner_knuckle_link:
+      - "left_robotiq_85_right_knuckle_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+    left_robotiq_85_right_knuckle_link:
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+      - "right_robotiq_85_left_finger_link"
+      - "right_robotiq_85_left_finger_tip_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+    left_shoulder_link:
+      - "left_upper_arm_link"
+      - "left_wrist_1_link"
+      - "left_wrist_2_link"
+      - "right_base_link_inertia"
+      - "right_shoulder_link"
+      - "right_upper_arm_link"
+    left_upper_arm_link:
+      - "right_base_link_inertia"
+      - "right_shoulder_link"
+    left_wrist_1_link:
+      - "left_wrist_2_link"
+      - "left_wrist_3_link"
+    left_wrist_2_link:
+      - "left_wrist_3_link"
+    right_base_link_inertia:
+      - "right_shoulder_link"
+      - "right_upper_arm_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+    right_camera_baselink:
+      - "right_camera_link"
+      - "right_robotiq_85_base_link"
+      - "right_robotiq_85_left_finger_link"
+      - "right_robotiq_85_left_finger_tip_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_camera_link:
+      - "right_robotiq_85_base_link"
+      - "right_robotiq_85_left_finger_link"
+      - "right_robotiq_85_left_finger_tip_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_forearm_link:
+      - "right_upper_arm_link"
+      - "right_wrist_1_link"
+    right_robotiq_85_base_link:
+      - "right_robotiq_85_left_finger_link"
+      - "right_robotiq_85_left_finger_tip_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_left_finger_link:
+      - "right_robotiq_85_left_finger_tip_link"
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_left_finger_tip_link:
+      - "right_robotiq_85_left_inner_knuckle_link"
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_left_inner_knuckle_link:
+      - "right_robotiq_85_left_knuckle_link"
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_left_knuckle_link:
+      - "right_robotiq_85_right_finger_link"
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_right_finger_link:
+      - "right_robotiq_85_right_finger_tip_link"
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_right_finger_tip_link:
+      - "right_robotiq_85_right_inner_knuckle_link"
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_right_inner_knuckle_link:
+      - "right_robotiq_85_right_knuckle_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_robotiq_85_right_knuckle_link:
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_shoulder_link:
+      - "right_upper_arm_link"
+      - "right_wrist_1_link"
+      - "right_wrist_2_link"
+    right_wrist_1_link:
+      - "right_wrist_2_link"
+      - "right_wrist_3_link"
+    right_wrist_2_link:
+      - "right_wrist_3_link"
+
+geometry: 
+  auto_generated_collision_sphere_group: 
+    spheres: 
+      base_link: 
+        - center: [0.0, 0.0, 1.343]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.157]
+          radius: 0.05
+        - center: [0.0, 0.0, 1.286]
+          radius: 0.05
+        - center: [0.0, 0.0, 1.23]
+          radius: 0.05
+        - center: [0.0, 0.0, 1.173]
+          radius: 0.05
+        - center: [0.0, 0.0, 1.117]
+          radius: 0.05
+        - center: [0.0, 0.0, 1.06]
+          radius: 0.05
+        - center: [0.0, 0.0, 1.004]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.947]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.891]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.834]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.778]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.721]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.665]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.609]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.552]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.496]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.439]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.383]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.326]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.27]
+          radius: 0.05
+        - center: [0.0, 0.0, 0.213]
+          radius: 0.05
+        - center: [0.0, 0.14, 1.43]
+          radius: 0.06
+        - center: [0.0, -0.134, 1.429]
+          radius: 0.06
+        - center: [0.0, 0.085, 1.43]
+          radius: 0.06
+        - center: [0.0, 0.03, 1.43]
+          radius: 0.06
+        - center: [0.0, -0.024, 1.43]
+          radius: 0.06
+        - center: [0.0, -0.079, 1.429]
+          radius: 0.06
+      left_base_link_inertia: 
+        - center: [0.0, -0.0, 0.054]
+          radius: 0.06
+      left_shoulder_link: 
+        - center: [0.0, 0.0, 0.0]
+          radius: 0.065
+      right_base_link_inertia: 
+        - center: [0.0, 0.0, 0.054]
+          radius: 0.06
+      right_shoulder_link: 
+        - center: [0.0, 0.0, 0.0]
+          radius: 0.065
+      left_upper_arm_link: 
+        - center: [-0.228, -0.0, 0.113]
+          radius: 0.06
+        - center: [0.0, -0.0, 0.117]
+          radius: 0.06
+        - center: [-0.182, -0.0, 0.114]
+          radius: 0.06
+        - center: [-0.137, -0.0, 0.115]
+          radius: 0.06
+        - center: [-0.091, -0.0, 0.116]
+          radius: 0.06
+        - center: [-0.046, -0.0, 0.116]
+          radius: 0.06
+      right_upper_arm_link: 
+        - center: [-0.234, -0.008, 0.12]
+          radius: 0.06
+        - center: [-0.0, 0.0, 0.12]
+          radius: 0.06
+        - center: [-0.187, -0.007, 0.12]
+          radius: 0.06
+        - center: [-0.141, -0.005, 0.12]
+          radius: 0.06
+        - center: [-0.094, -0.003, 0.12]
+          radius: 0.06
+        - center: [-0.047, -0.002, 0.12]
+          radius: 0.06
+      left_forearm_link: 
+        - center: [-0.005, 0.0, 0.026]
+          radius: 0.05
+        - center: [-0.208, -0.0, 0.031]
+          radius: 0.05
+        - center: [-0.045, 0.0, 0.027]
+          radius: 0.05
+        - center: [-0.086, 0.0, 0.028]
+          radius: 0.05
+        - center: [-0.126, 0.0, 0.029]
+          radius: 0.05
+        - center: [-0.167, -0.0, 0.03]
+          radius: 0.05
+      right_forearm_link: 
+        - center: [-0.0, 0.0, 0.029]
+          radius: 0.05
+        - center: [-0.203, -0.0, 0.027]
+          radius: 0.05
+        - center: [-0.041, -0.0, 0.029]
+          radius: 0.05
+        - center: [-0.081, -0.0, 0.028]
+          radius: 0.05
+        - center: [-0.122, -0.0, 0.028]
+          radius: 0.05
+        - center: [-0.162, -0.0, 0.028]
+          radius: 0.05
+      left_wrist_1_link: 
+        - center: [-0.0, 0.014, 0.0]
+          radius: 0.04
+        - center: [0.0, -0.02, -0.0]
+          radius: 0.04
+        - center: [-0.0, 0.0, -0.032]
+          radius: 0.04
+      right_wrist_1_link: 
+        - center: [0.0, -0.021, -0.0]
+          radius: 0.04
+        - center: [0.0, 0.013, -0.0]
+          radius: 0.04
+        - center: [0.0, -0.0, -0.029]
+          radius: 0.04
+      left_wrist_2_link: 
+        - center: [0.0, -0.013, -0.003]
+          radius: 0.04
+        - center: [0.0, 0.019, -0.0]
+          radius: 0.04
+      right_wrist_2_link: 
+        - center: [-0.004, -0.014, -0.0]
+          radius: 0.04
+        - center: [0.0, 0.019, -0.0]
+          radius: 0.04
+      left_wrist_3_link: 
+        - center: [0.0, -0.0, -0.023]
+          radius: 0.04
+      right_wrist_3_link: 
+        - center: [0.0, 0.0, -0.027]
+          radius: 0.04
+      left_camera_link: 
+        - center: [-0.005, 0.013, 0.003]
+          radius: 0.013
+        - center: [0.01, -0.012, 0.003]
+          radius: 0.013
+        - center: [0.005, 0.014, 0.003]
+          radius: 0.013
+        - center: [0.01, -0.012, 0.0]
+          radius: 0.013
+      right_camera_link: 
+        - center: [-0.005, 0.013, 0.003]
+          radius: 0.013
+        - center: [0.01, -0.012, 0.003]
+          radius: 0.013
+        - center: [0.005, 0.014, 0.003]
+          radius: 0.013
+        - center: [0.01, -0.012, 0.0]
+          radius: 0.013
+      left_robotiq_85_base_link: 
+        - center: [-0.0, 0.0, 0.005]
+          radius: 0.035
+        - center: [-0.0, 0.0, 0.052]
+          radius: 0.035
+      right_robotiq_85_base_link: 
+        - center: [0.001, 0.0, 0.056]
+          radius: 0.035
+        - center: [0.0, 0.0, 0.0]
+          radius: 0.035
+    

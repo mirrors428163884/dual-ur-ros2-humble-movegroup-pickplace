@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: ur_description
+    relative_path: urdf/dual_ur.urdf.xacro
+  srdf:
+    relative_path: config/dual_arm.srdf
+  package_settings:
+    author_name: wang.yuanwen1
+    author_email: wang.yuanwen1@byd.com
+    generated_timestamp: 1745218323
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

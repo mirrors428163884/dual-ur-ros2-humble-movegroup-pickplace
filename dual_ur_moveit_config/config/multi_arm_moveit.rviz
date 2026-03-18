@@ -1,0 +1,78 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Help Height: 0
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /Status1
+        - /MotionPlanning_Left
+        - /MotionPlanning_Right
+        - /MotionPlanning_Dual
+      Splitter Ratio: 0.5
+    Tree Height: 484
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Expanded:
+      - /2D Goal Pose1
+      - /Publish Point1
+    Name: Tool Properties
+  - Class: rviz_common/Views
+    Name: Views
+  - Class: rviz_common/Time
+    Name: Time
+
+Visualization Manager:
+  Displays:
+    # 基础网格
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Color: 160; 160; 164
+      Reference Frame: world
+
+    # 左臂规划显示
+    - Class: moveit_rviz_plugin/MotionPlanning
+      Name: MotionPlanning_Left
+      Planning Group: left
+      Planned Path:
+        Robot Color: 255; 100; 100  # 红色系
+        Trajectory Topic: /move_group_left_arm/display_planned_path
+      Planning Scene Topic: /move_group_left_arm/monitored_planning_scene
+
+    # 右臂规划显示  
+    - Class: moveit_rviz_plugin/MotionPlanning
+      Name: MotionPlanning_Right
+      Planning Group: right
+      Planned Path:
+        Robot Color: 100; 100; 255  # 蓝色系
+        Trajectory Topic: /move_group_right_arm/display_planned_path
+      Planning Scene Topic: /move_group_right_arm/monitored_planning_scene
+
+    # 双臂协同显示
+    - Class: moveit_rviz_plugin/MotionPlanning
+      Name: MotionPlanning_Dual
+      Planning Group: dual_arm
+      Planned Path:
+        Robot Color: 200; 100; 200  # 紫色系
+        Trajectory Topic: /move_group_dual_arm/display_planned_path
+      Planning Scene Topic: /move_group_dual_arm/monitored_planning_scene
+
+    # 公共场景显示
+    - Class: moveit_rviz_plugin/PlanningScene
+      Name: PlanningScene
+      Planning Scene Topic: /planning_scene
+
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: world
+
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Target Frame: world
+      Distance: 3.0
+      Focal Point: [1.0, 0.5, 0.5]  # 调整视角焦点到双臂中心
+
+Window Geometry:
+  # 保持原有窗口布局参数...

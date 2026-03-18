@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="right_camera_urdf">
+  <link
+    name="right_camera_baselink">
+    <inertial>
+      <origin
+        xyz="0.00169176146350225 6.27177057885842E-05 0.00613551141760804"
+        rpy="0 0 0" />
+      <mass
+        value="0.0391136973543017" />
+      <inertia
+        ixx="2.10082366937357E-05"
+        ixy="4.15569575588325E-09"
+        ixz="6.31312381479377E-08"
+        iyy="1.79110804276993E-05"
+        iyz="4.29415564719963E-09"
+        izz="3.81003191600635E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ur_description/meshes/camera/right_camera_baselink.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ur_description/meshes/camera/right_camera_baselink.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="right_camera_link">
+    <inertial>
+      <origin
+        xyz="5.61106716645554E-13 -0.00144115236579754 0.000791750983279549"
+        rpy="0 0 0" />
+      <mass
+        value="0.00178362481871375" />
+      <inertia
+        ixx="1.30543218810336E-07"
+        ixy="-5.08996360184974E-19"
+        ixz="-8.35297379808027E-20"
+        iyy="6.39586835557311E-08"
+        iyz="-3.24181725937733E-19"
+        izz="1.89926836088096E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ur_description/meshes/camera/right_camera_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ur_description/meshes/camera/right_camera_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_camera_joint"
+    type="fixed">
+    <origin
+      xyz="0 -0.049998 -0.0025"
+      rpy="0 0 0" />
+    <parent
+      link="right_camera_baselink" />
+    <child
+      link="right_camera_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

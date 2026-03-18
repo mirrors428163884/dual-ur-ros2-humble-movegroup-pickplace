@@ -1,0 +1,31 @@
+publisher_listener_node:
+  ros__parameters:
+    static_transforms:
+      left:
+        header:
+          frame_id: "left_ee_link"  # 父坐标系
+        child_frame_id: "left_camera_optical_link"  # 子坐标系
+        transform:
+          translation:
+            x: -0.010085904098732817
+            y: -0.05593219699545967
+            z: -0.10698602107179399
+          rotation:
+            x: 0.0023041562397161544
+            y: -0.0011350001984449616
+            z: 0.012953549785264197
+            w: 0.999912800291372
+      right:
+        header:
+          frame_id: "right_ee_link"  # 父坐标系
+        child_frame_id: "right_camera_optical_link"  # 子坐标系
+        transform:
+          translation:
+            x: -0.009477403694473772
+            y: -0.05799486027435592
+            z: -0.1113758332025458
+          rotation:
+            x: -0.007479470726966599
+            y: -0.0006452762408057546
+            z: -0.004335740179841824
+            w: 0.9999624205405473

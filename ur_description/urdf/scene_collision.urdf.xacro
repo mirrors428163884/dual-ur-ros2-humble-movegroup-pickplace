@@ -1,0 +1,39 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+<xacro:macro name="scene_collision" params="parent box_x box_y box_z" >
+
+  <xacro:property name="box_mass" value="1.0"/>
+  <xacro:property name="box_ixx" value="${box_mass / 12.0 * (box_y * box_y + box_z * box_z)}"/>
+  <xacro:property name="box_iyy" value="${box_mass / 12.0 * (box_x * box_x + box_z * box_z)}"/>
+  <xacro:property name="box_izz" value="${box_mass / 12.0 * (box_x * box_x + box_y * box_y)}"/>
+	
+  <link name="box_link">
+    <visual>
+          <geometry>
+              <box size="${box_x} ${box_y} ${box_z}"/>
+          </geometry>
+    <material name="blue">
+              <color rgba="0 0 1 1"/>
+          </material>
+      </visual>
+      <collision>
+          <geometry>
+              <box size="${box_x} ${box_y} ${box_z}"/>
+          </geometry>
+      </collision>
+      <inertial>
+          <mass value="${box_mass}"/>
+          <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+          <inertia ixx="${box_ixx}" ixy="0.0" ixz="0.0" iyy="${box_iyy}" iyz="0.0" izz="${box_izz}"/>
+      </inertial>
+  </link>
+
+  <joint name="box_joint" type="fixed">
+      <parent link="${parent}"/> 
+      <child link="box_link"/>
+      <origin xyz="0.0 0.0 0.75" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+
+</xacro:macro>
+</robot>
