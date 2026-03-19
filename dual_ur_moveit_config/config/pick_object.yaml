@@ -1,0 +1,24 @@
+dual_move:
+  # ros__parameters:
+  collision_object:
+    # ID 必须与代码中引用的名称一致
+    id: "target_plate1564897"
+    # 参考系为 world
+    frame_id: "table_link"
+    # 几何形状为 box
+    shape: "box"
+    # 尺寸 [长, 宽, 高]，单位：米，与 URDF 定义完全一致
+    dimensions: [0.2, 0.15, 0.01]
+    # 位姿：位置和朝向
+    pose:
+      position:
+        # 位置基于 URDF 注释计算得出
+        x: 0.0
+        y: 0.0
+        z: 0.58 # table_link 中心 z=0.75, 桌面 z=0.775, plate 中心 z=0.775+0.005=0.78
+      orientation:
+        # 默认朝向，无旋转
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0

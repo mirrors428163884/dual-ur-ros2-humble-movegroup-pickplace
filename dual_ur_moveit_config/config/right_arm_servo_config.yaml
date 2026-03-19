@@ -1,0 +1,40 @@
+# 右臂伺服参数
+use_gazebo: false
+
+command_in_type: "speed_units"
+scale:
+  linear: 0.6
+  rotational: 0.3
+  joint: 0.01
+
+publish_period: 0.02
+command_out_type: trajectory_msgs/JointTrajectory
+publish_joint_positions: true
+publish_joint_velocities: true
+
+smoothing_filter_plugin_name: "online_signal_smoothing::ButterworthFilterPlugin"
+
+# 关键：指定右臂参数
+move_group_name: right  # 必须与SRDF中的group名一致
+planning_frame: world       # 与URDF中的world坐标系一致
+ee_frame_name: right_ee_link
+robot_link_command_frame: world
+
+incoming_command_timeout: 0.1
+num_outgoing_halt_msgs_to_publish: 4
+
+lower_singularity_threshold: 20.0
+hard_stop_singularity_threshold: 50.0
+joint_limit_margin: 0.05
+
+# 话题配置
+cartesian_command_in_topic: ~/delta_twist_cmds
+joint_command_in_topic: ~/delta_joint_cmds
+joint_topic: /joint_states
+status_topic: ~/status
+command_out_topic: /right_arm_controller/joint_trajectory
+
+check_collisions: true
+collision_check_rate: 10.0
+self_collision_proximity_threshold: 0.05  # 增大防碰撞
+scene_collision_proximity_threshold: 0.05

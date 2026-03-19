@@ -16,6 +16,14 @@
 
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <control_msgs/action/follow_joint_trajectory.hpp>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h> 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <moveit_msgs/msg/collision_object.hpp>
+#include <shape_msgs/msg/solid_primitive.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <urdf/model.h> // 需要安装 urdf 依赖
+#include <rclcpp/parameter.hpp> // 确保包含此头文件
 
 // 全局日志器
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("dual_move");
@@ -93,123 +101,223 @@ void printCurrentJointStates(const rclcpp::Node::SharedPtr& main_node, const std
 
 
 
-// 在文件顶部或其他合适位置添加此辅助函数
-moveit_msgs::msg::CollisionObject createTargetPlateCollisionObject()
+/**
+ * @brief 从 ROS 2 参数服务器加载碰撞体配置
+ * 
+ * 自动处理三种可能的情况：
+ * 1. 标准路径：collision_object.id
+ * 2. ros__parameters 前缀：ros__parameters.collision_object.id
+ * 3. 节点名前缀 (当前问题)：dual_move.collision_object.id
+ */
+bool load_collision_object_params(
+    const rclcpp::Node::SharedPtr& node,
+    std::string& object_id,
+    std::string& frame_id,
+    std::string& shape,
+    std::vector<double>& dimensions,
+    geometry_msgs::msg::Pose& pose)
 {
-    moveit_msgs::msg::CollisionObject collision_object;
-    collision_object.header.frame_id = "world"; // 使用世界坐标系
-    collision_object.id = "target_plate";
+    try {
+        // 1. 获取当前节点名称
+        std::string node_name = node->get_name();
+        RCLCPP_INFO(LOGGER, "当前节点名称：%s", node_name.c_str());
 
-    // 定义几何形状（盒子）
-    shape_msgs::msg::SolidPrimitive primitive;
-    primitive.type = primitive.BOX;
-    primitive.dimensions.resize(3);
-    primitive.dimensions[primitive.BOX_X] = 0.2;  // 长
-    primitive.dimensions[primitive.BOX_Y] = 0.15; // 宽
-    primitive.dimensions[primitive.BOX_Z] = 0.01; // 高
+        // 2. 获取所有参数名用于分析
+        auto param_names = node->list_parameters({}, 0).names;
+        
+        // 3. 确定正确的前缀
+        std::string prefix = "";
+        
+        // 检查是否有 "ros__parameters" 前缀
+        bool has_ros_params = false;
+        for (const auto& name : param_names) {
+            if (name.find("ros__parameters.collision_object") != std::string::npos) {
+                has_ros_params = true;
+                break;
+            }
+        }
 
-    // 定义姿态（位置和朝向）
-    // 根据你的 URDF 注释: plate 中心在 z = 0.78
-    geometry_msgs::msg::Pose pose;
-    pose.orientation.w = 1.0; // 无旋转
-    pose.position.x = 0.0;
-    pose.position.y = 0.0;
-    pose.position.z = 0.78; // 桌面 z=0.75 + 厚度 0.05/2 + plate厚度 0.01/2 = 0.75+0.025+0.005=0.78
+        // 检查是否有 "节点名" 前缀 (例如 dual_move.collision_object)
+        bool has_node_prefix = false;
+        std::string node_prefix_candidate = node_name + ".collision_object";
+        for (const auto& name : param_names) {
+            if (name.find(node_prefix_candidate) != std::string::npos) {
+                has_node_prefix = true;
+                break;
+            }
+        }
 
-    collision_object.primitives.push_back(primitive);
-    collision_object.primitive_poses.push_back(pose);
-    collision_object.operation = collision_object.ADD;
+        // 决定使用哪个前缀
+        if (has_ros_params) {
+            prefix = "ros__parameters.";
+            RCLCPP_INFO(LOGGER, "检测到 'ros__parameters' 前缀模式。");
+        } else if (has_node_prefix) {
+            prefix = node_name + ".";
+            RCLCPP_INFO(LOGGER, "检测到节点名 '%s' 前缀模式，将使用 '%s' 作为前缀。", node_name.c_str(), prefix.c_str());
+        } else {
+            RCLCPP_INFO(LOGGER, "未检测到特殊前缀，使用标准路径。");
+        }
 
-    return collision_object;
+        // 4. 定义辅助 Lambda 来读取参数
+        auto get_param_str = [&](const std::string& suffix) -> std::string {
+            return node->get_parameter(prefix + suffix).as_string();
+        };
+        
+        auto get_param_double = [&](const std::string& suffix) -> double {
+            return node->get_parameter(prefix + suffix).as_double();
+        };
+
+        auto get_param_array = [&](const std::string& suffix) -> std::vector<double> {
+            return node->get_parameter(prefix + suffix).as_double_array();
+        };
+
+        // --- 开始读取 ---
+        // 注意：suffix 始终是相对路径 "collision_object.xxx"
+        
+        object_id = get_param_str("collision_object.id");
+        frame_id = get_param_str("collision_object.frame_id");
+        shape = get_param_str("collision_object.shape");
+        
+        dimensions = get_param_array("collision_object.dimensions");
+        if (dimensions.size() != 3) {
+            RCLCPP_ERROR(LOGGER, "尺寸数组长度错误，应为 3，实际为：%zu", dimensions.size());
+            return false;
+        }
+
+        pose.position.x = get_param_double("collision_object.pose.position.x");
+        pose.position.y = get_param_double("collision_object.pose.position.y");
+        pose.position.z = get_param_double("collision_object.pose.position.z");
+        
+        pose.orientation.x = get_param_double("collision_object.pose.orientation.x");
+        pose.orientation.y = get_param_double("collision_object.pose.orientation.y");
+        pose.orientation.z = get_param_double("collision_object.pose.orientation.z");
+        pose.orientation.w = get_param_double("collision_object.pose.orientation.w");
+
+        // --- 成功日志 ---
+        RCLCPP_INFO(LOGGER,
+            "✅ 成功加载物体 '%s' (形状：%s) 在帧 '%s' 下。\n"
+            "   尺寸：[%.3f, %.3f, %.3f]\n"
+            "   位置：(%.3f, %.3f, %.3f)\n"
+            "   朝向：(%.3f, %.3f, %.3f, %.3f)",
+            object_id.c_str(), shape.c_str(), frame_id.c_str(),
+            dimensions[0], dimensions[1], dimensions[2],
+            pose.position.x, pose.position.y, pose.position.z,
+            pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
+
+        return true;
+
+    } catch (const rclcpp::exceptions::ParameterNotDeclaredException& e) {
+        RCLCPP_ERROR(LOGGER, "❌ 参数未找到：%s", e.what());
+        RCLCPP_INFO(LOGGER, "调试信息 - 当前所有包含 'collision_object' 的参数：");
+        auto all_params = node->list_parameters({}, 0).names;
+        for(const auto& p : all_params) {
+            if(p.find("collision_object") != std::string::npos) {
+                RCLCPP_INFO(LOGGER, "  - %s", p.c_str());
+            }
+        }
+        return false;
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(LOGGER, "❌ 读取参数时发生错误：%s", e.what());
+        return false;
+    }
 }
 
 /**
- * @brief 将目标平板附着到指定机械臂的末端执行器
+ * @brief 创建一个 CollisionObject
  * 
- * 此函数会先将 target_plate 作为一个独立的 CollisionObject 添加到规划场景中，
- * 然后再将其附着到机械臂上。
+ * 此函数使用从 YAML 加载的参数来构造物体。
  */
-bool attach_target_plate(const rclcpp::Node::SharedPtr& node, const std::string& arm_id)
+bool create_target_plate_collision_object(
+    const rclcpp::Node::SharedPtr& node,
+    moveit_msgs::msg::CollisionObject& collision_object)
 {
-    // 1. 创建 PlanningSceneInterface 来管理场景中的物体
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-    
-    // 2. 创建 MoveGroupInterface 用于附着操作
+    std::string object_id, frame_id, shape; // <-- 1. 在这里添加 'shape' 变量
+    std::vector<double> dimensions;
+    geometry_msgs::msg::Pose pose;
+
+    // 2. 在调用时，将 'shape' 作为第四个参数传入
+    if (!load_collision_object_params(node, object_id, frame_id, shape, dimensions, pose)) {
+        return false;
+    }
+
+    // 1. 设置 ID 和参考系
+    collision_object.id = object_id;
+    collision_object.header.frame_id = frame_id;
+    collision_object.operation = moveit_msgs::msg::CollisionObject::ADD;
+
+    // 2. 定义几何形状 (假设是 Box)
+    shape_msgs::msg::SolidPrimitive box;
+    box.type = box.BOX;
+    if (dimensions.size() == 3) {
+        box.dimensions.resize(3);
+        box.dimensions[box.BOX_X] = dimensions[0];
+        box.dimensions[box.BOX_Y] = dimensions[1];
+        box.dimensions[box.BOX_Z] = dimensions[2];
+    } else {
+        RCLCPP_ERROR(LOGGER, "YAML 中的 dimensions 参数必须包含3个值 (x, y, z)");
+        return false;
+    }
+
+    collision_object.primitives.push_back(box);
+    collision_object.primitive_poses.push_back(pose);
+    return true;
+}
+
+/**
+ * @brief 将已存在的物体附着到机械臂末端
+ * 
+ * 注意：此函数假设名为 object_name 的物体已经作为 world object 存在于规划场景中。
+ */
+bool attach_target_plate(const rclcpp::Node::SharedPtr& node, const std::string& arm_id, const std::string& object_name)
+{
     auto move_group = std::make_shared<moveit::planning_interface::MoveGroupInterface>(node, arm_id);
+    const std::string ee_link = (arm_id == "left") ? "left_ee_link" : "right_ee_link";
 
-    // 3. 定义物体和链接名称
-    std::string object_name = "target_plate";
-    std::string ee_link = (arm_id == "left") ? "left_ee_link" : "right_ee_link";
-
-    // 4. 定义允许接触的链接
+    // 定义 Touch Links
     std::vector<std::string> touch_links = {
         ee_link,
         arm_id + "_tool0",
         arm_id + "_flange",
-        arm_id + "_wrist_3_link"
+        arm_id + "_robotiq_85_left_finger_tip_link", 
+        arm_id + "_robotiq_85_right_finger_tip_link"
     };
 
-    // --- 关键步骤：管理规划场景中的物体 ---
-    // 4.1 先移除场景中任何已存在的同名物体（清理）
-    std::vector<std::string> objects_to_remove = {object_name};
-    planning_scene_interface.removeCollisionObjects(objects_to_remove);
-    RCLCPP_INFO(LOGGER, "已从规划场景中移除旧的 '%s'。", object_name.c_str());
-    
-    // 4.2 等待移除操作完成
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
-
-    // 4.3 创建并添加新的碰撞对象
-    moveit_msgs::msg::CollisionObject collision_object = createTargetPlateCollisionObject();
-    std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
-    collision_objects.push_back(collision_object);
-    planning_scene_interface.addCollisionObjects(collision_objects);
-    RCLCPP_INFO(LOGGER, "已将 '%s' 作为独立碰撞对象添加到规划场景中。", object_name.c_str());
-
-    // 4.4 等待场景完全更新（非常重要！）
-    rclcpp::sleep_for(std::chrono::seconds(1));
-
-    // --- 执行附着 ---
+    RCLCPP_INFO(LOGGER, "Attaching '%s' to '%s'...", object_name.c_str(), ee_link.c_str());
     bool success = move_group->attachObject(object_name, ee_link, touch_links);
+    
     if (success) {
-        RCLCPP_INFO(LOGGER, "成功将 %s 附着到 %s！", object_name.c_str(), ee_link.c_str());
+        RCLCPP_INFO(LOGGER, "SUCCESS: Object '%s' is now attached.", object_name.c_str());
+        move_group->setStartStateToCurrentState();
     } else {
-        RCLCPP_ERROR(LOGGER, "附着失败！请检查规划场景和 MoveIt 配置。");
+        RCLCPP_ERROR(LOGGER, "FAILED: Could not attach object '%s'.", object_name.c_str());
     }
+
     return success;
 }
 
 /**
- * @brief 从末端执行器分离目标平板，并将其放回环境中
+ * @brief 分离物体
+ * 
+ * 分离后，物体将自动变回 world object。
  */
-bool detach_target_plate(const rclcpp::Node::SharedPtr& node, const std::string& arm_id)
+bool detach_target_plate(const rclcpp::Node::SharedPtr& node, const std::string& arm_id, const std::string& object_name)
 {
-    // 1. 创建接口
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     auto move_group = std::make_shared<moveit::planning_interface::MoveGroupInterface>(node, arm_id);
 
-    std::string object_name = "target_plate";
-
-    // 2. 执行分离
+    RCLCPP_INFO(LOGGER, "Attempting to detach object '%s'...", object_name.c_str());
     bool success = move_group->detachObject(object_name);
+    
     if (success) {
-        RCLCPP_INFO(LOGGER, "成功从机械臂分离 %s！", object_name.c_str());
-        
-        // 3. 分离后，将物体作为静态障碍物重新添加回环境中
-        // （可选：这里可以更新物体的位置为当前EE的位置，或者放回原位）
-        moveit_msgs::msg::CollisionObject collision_object = createTargetPlateCollisionObject();
-        // 如果你想让它留在分离时的位置，可以在这里更新 collision_object 的 pose
-        // 例如：collision_object.primitive_poses[0] = current_ee_pose;
-        
-        std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
-        collision_objects.push_back(collision_object);
-        planning_scene_interface.addCollisionObjects(collision_objects);
-        RCLCPP_INFO(LOGGER, "已将 %s 作为静态障碍物放回环境中。", object_name.c_str());
-        
+        RCLCPP_INFO(LOGGER, "SUCCESS: Object '%s' detached.", object_name.c_str());
+        move_group->setStartStateToCurrentState();
     } else {
-        RCLCPP_ERROR(LOGGER, "分离 %s 失败！", object_name.c_str());
+        RCLCPP_ERROR(LOGGER, "FAILED: Could not detach object '%s'.", object_name.c_str());
     }
+
     return success;
 }
+
+
 
 
 /**
@@ -377,6 +485,9 @@ int to_joint_config(const rclcpp::Node::SharedPtr& node, const std::string &id, 
 /**
  * @brief 主函数：初始化 ROS 2 上下文，执行双臂运动控制流程
  */
+/**
+ * @brief 主函数：初始化 ROS 2 上下文，执行双臂运动控制流程
+ */
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
@@ -387,45 +498,75 @@ int main(int argc, char **argv)
     auto move_group_node = rclcpp::Node::make_shared("dual_move", node_options);
     move_group_node->set_parameter({"use_sim_time", true});
 
+    // === 关键步骤：加载 YAML 配置 ===
+    // 确保你的 launch 文件正确加载了 pick_object.yaml 到这个节点的命名空间
+    // 例如: parameters=[{'file_path_to_pick_object.yaml'}]
+    RCLCPP_INFO(LOGGER, "正在从参数服务器加载 YAML 配置...");
+    // 参数会在 load_collision_object_params 中被声明和读取
+
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(move_group_node);
     std::thread([&executor]() { executor.spin(); }).detach();
+    
+    // 等待系统完全启动
     rclcpp::sleep_for(std::chrono::seconds(5));
 
     // === 打印初始状态 ===
     printCurrentJointStates(move_group_node, "left");
     printCurrentJointStates(move_group_node, "right");
 
-    // // === 新增：抓取测试 ===
-    // RCLCPP_INFO(LOGGER, ">>> 测试阶段 3: 抓取平板");
-    // RCLCPP_INFO(LOGGER, "移动左臂到抓取位姿...");
-    // if (to_srdf_NamedTarget(move_group_node, "left", "left_pose1", 0.3) != 0) {
-    //     RCLCPP_WARN(LOGGER, "左臂移动到抓取位姿失败");
-    // }
-    // rclcpp::sleep_for(std::chrono::seconds(2));
+    const std::string ARM_ID = "left";
 
-    RCLCPP_INFO(LOGGER, "尝试附着平板到左臂...");
-    if (!attach_target_plate(move_group_node, "left")) {
-        RCLCPP_ERROR(LOGGER, "附着失败！");
+    // === 步骤 0: 创建并添加 target_plate 作为世界物体 ===
+    RCLCPP_INFO(LOGGER, ">>> 正在创建并添加世界物体 ...");
+    moveit_msgs::msg::CollisionObject co;
+    if (!create_target_plate_collision_object(move_group_node, co)) {
+        RCLCPP_ERROR(LOGGER, "创建世界物体失败！");
+        return EXIT_FAILURE;
+    }
+
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+    planning_scene_interface.applyCollisionObjects({co});
+    rclcpp::sleep_for(std::chrono::milliseconds(1000)); // 等待 RViz 更新
+    RCLCPP_INFO(LOGGER, ">>> 世界物体 '%s' 添加成功。", co.id.c_str());
+
+    // === 移动到预抓取位置 ===
+    RCLCPP_INFO(LOGGER, ">>> 移动左臂到预抓取位姿...");
+    if (to_srdf_NamedTarget(move_group_node, ARM_ID, "left_pose1", 0.3) != 0) {
+        RCLCPP_WARN(LOGGER, "左臂移动到预抓取位姿失败，但将继续尝试附着（假设已在附近）");
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
 
-    RCLCPP_INFO(LOGGER, "移动左臂（携带平板）到新位置...");
+    // === 步骤 1: 附着物体 ===
+    RCLCPP_INFO(LOGGER, "尝试附着物体 '%s' 到 %s 臂...", co.id.c_str(), ARM_ID.c_str());
+    if (!attach_target_plate(move_group_node, ARM_ID, co.id)) {
+        RCLCPP_ERROR(LOGGER, "附着失败！");
+        return EXIT_FAILURE;
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // === 步骤 2: 携带物体移动 ===
+    RCLCPP_INFO(LOGGER, "移动左臂（携带 '%s'）到新位置...", co.id.c_str());
     std::vector<double> carry_pose_deg = {80.0, -40.0, -90.0, -20.0, 90.0, 0.0};
-    if (to_joint_config(move_group_node, "left", carry_pose_deg, 0.3) != 0) {
+    if (to_joint_config(move_group_node, ARM_ID, carry_pose_deg, 0.3) != 0) {
         RCLCPP_WARN(LOGGER, "携带平板移动失败");
     }
     rclcpp::sleep_for(std::chrono::seconds(3));
 
-    RCLCPP_INFO(LOGGER, "分离平板...");
-    if (!detach_target_plate(move_group_node, "left")) {
+    // === 步骤 3: 分离物体 ===
+    RCLCPP_INFO(LOGGER, "分离物体 '%s'...", co.id.c_str());
+    if (!detach_target_plate(move_group_node, ARM_ID, co.id)) {
         RCLCPP_WARN(LOGGER, "分离失败！");
     }
     rclcpp::sleep_for(std::chrono::seconds(1));
 
     RCLCPP_INFO(LOGGER, "所有测试完成。按 CTRL+C 退出。");
+    
     rclcpp::Rate rate(0.5);
-    while (rclcpp::ok()) { rate.sleep(); }
+    while (rclcpp::ok()) { 
+        rate.sleep(); 
+    }
+    
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

@@ -63,11 +63,11 @@
         <joint name="right_wrist_3_joint" value="0"/>
     </group_state>
     <group_state name="left_pose1" group="left">
-        <joint name="left_elbow_joint" value="-0.66"/>
-        <joint name="left_shoulder_lift_joint" value="-0.1"/>
-        <joint name="left_shoulder_pan_joint" value="0.6"/>
-        <joint name="left_wrist_1_joint" value="-0.2"/>
-        <joint name="left_wrist_2_joint" value="1.57"/>
+        <joint name="left_shoulder_pan_joint" value="${radians(37)}"/>
+        <joint name="left_shoulder_lift_joint" value="${radians(-35)}"/>
+        <joint name="left_elbow_joint" value="${radians(12)}"/>        
+        <joint name="left_wrist_1_joint" value="${radians(-157)}"/>
+        <joint name="left_wrist_2_joint" value="${radians(-37)}"/>
         <joint name="left_wrist_3_joint" value="0"/>
     </group_state>
     <group_state name="open" group="left_gripper">
