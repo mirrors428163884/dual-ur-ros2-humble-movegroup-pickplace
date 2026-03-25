@@ -1169,23 +1169,28 @@ if (!deleteCollisionObject(move_group_node, co.id)) {
 }
 rclcpp::sleep_for(std::chrono::seconds(2));
 
+
 // === 新增：创建下落动画效果（模拟物体逐步下落到桌面）===
 RCLCPP_INFO(LOGGER, ">>> 创建碰撞体 '%s' 下落动画到桌面...", co.id.c_str());
 
-// 获取原始碰撞体参数用于动画
-std::string object_id, frame_id, shape;
-std::vector<double> dimensions;
+// --- 直接定义新的碰撞体参数，不再从YAML加载 ---
+std::string object_id = "target_plate"; // 或者使用 co.id
+std::string frame_id = "world";
+std::vector<double> dimensions = {0.2, 0.2, 0.05}; // 长 x 宽 x 高 (可根据需要调整)
 geometry_msgs::msg::Pose original_pose;
-if (!load_collision_object_params(move_group_node, object_id, frame_id, shape, dimensions, original_pose)) {
-    RCLCPP_ERROR(LOGGER, "无法加载碰撞体参数，使用默认值");
-    // 使用默认值
-    dimensions = {0.2, 0.2, 0.05}; // 长 x 宽 x 高
-    original_pose.position.z = 1.0; // 假设起始高度为1.0m
-}
+original_pose.position.x = -0.20;
+original_pose.position.y = 0.013152;
+original_pose.position.z = 1.3;
+// 设置一个默认朝向（单位四元数，表示无旋转）
+original_pose.orientation.x = 0.0;
+original_pose.orientation.y = 0.0;
+original_pose.orientation.z = 0.0;
+original_pose.orientation.w = 1.0;
 
+// --- 以下代码保持不变 ---
 // 设置下落参数
 double start_z = original_pose.position.z;
-double end_z = 0.775; // 桌面高度 + 物体半厚 (0.75 + 0.025)
+double end_z = 0.78; // 桌面高度 + 物体半厚 (0.75 + 0.025)
 int animation_steps = 20; // 动画步数
 double step_delay_ms = 50.0; // 每步延迟毫秒
 
@@ -1198,8 +1203,8 @@ if (start_z <= end_z) {
 moveit::planning_interface::PlanningSceneInterface planning_scene_interface_falling;
 for (int i = 0; i <= animation_steps; ++i) {
     moveit_msgs::msg::CollisionObject falling_co;
-    falling_co.id = co.id;
-    falling_co.header.frame_id = "world";
+    falling_co.id = object_id; // 使用新定义的ID
+    falling_co.header.frame_id = frame_id;
     falling_co.operation = moveit_msgs::msg::CollisionObject::ADD;
     
     // 创建几何形状
@@ -1214,9 +1219,9 @@ for (int i = 0; i <= animation_steps; ++i) {
     // 计算当前Z位置
     double current_z = start_z - (start_z - end_z) * static_cast<double>(i) / animation_steps;
     
-    // 设置当前位置
+    // 设置当前位置 (X, Y 保持不变)
     geometry_msgs::msg::Pose current_pose;
-    current_pose.position.x = original_pose.position.x; // 保持X,Y不变
+    current_pose.position.x = original_pose.position.x;
     current_pose.position.y = original_pose.position.y;
     current_pose.position.z = current_z;
     current_pose.orientation = original_pose.orientation; // 保持朝向不变
@@ -1230,8 +1235,10 @@ for (int i = 0; i <= animation_steps; ++i) {
     rclcpp::sleep_for(std::chrono::milliseconds(static_cast<int>(step_delay_ms)));
 }
 
-RCLCPP_INFO(LOGGER, ">>> 碰撞体 '%s' 下落动画完成，位于桌面高度 z=%.3f", co.id.c_str(), end_z);
-    
+RCLCPP_INFO(LOGGER, ">>> 碰撞体 '%s' 下落动画完成，位于桌面高度 z=%.3f", object_id.c_str(), end_z);
+
+
+
     RCLCPP_INFO(LOGGER, "所有测试完成。按 CTRL+C 退出。");
     
     rclcpp::Rate rate(0.5);
