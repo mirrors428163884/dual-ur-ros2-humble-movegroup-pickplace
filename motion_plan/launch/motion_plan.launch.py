@@ -183,6 +183,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         jointprinter_node,
-        dual_arm_follower_node,
+        # dual_arm_follower_node,
         # rviz_node,
     ])

@@ -4,10 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /MotionPlanning1
-        - /MotionPlanning1/Planning Request1
+        - /MotionPlanning1/Planning Metrics1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
-    Tree Height: 140
+    Tree Height: 292
   - Class: rviz_common/Help
     Name: Help
   - Class: rviz_common/Views
@@ -15,6 +16,8 @@ Panels:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
+  - Class: rviz_visual_tools/RvizVisualToolsGui
+    Name: RvizVisualToolsGui
 Visualization Manager:
   Class: ""
   Displays:
@@ -308,11 +311,6 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          target_plate:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
           world:
             Alpha: 1
             Show Axes: false
@@ -340,7 +338,7 @@ Visualization Manager:
         Goal State Color: 250; 128; 0
         Interactive Marker Size: 0.10000000149011612
         Joint Violation Color: 255; 0; 255
-        Planning Group: left
+        Planning Group: right_gripper
         Query Goal State: true
         Query Start State: false
         Show Workspace: false
@@ -604,11 +602,6 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          target_plate:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
           world:
             Alpha: 1
             Show Axes: false
@@ -618,6 +611,205 @@ Visualization Manager:
         Show Robot Visual: true
       Value: true
       Velocity_Scaling_Factor: 1
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        base_left:
+          Value: false
+        base_right:
+          Value: false
+        left_base:
+          Value: false
+        left_base_link:
+          Value: false
+        left_base_link_inertia:
+          Value: false
+        left_camera_baselink:
+          Value: false
+        left_camera_link:
+          Value: false
+        left_ee_link:
+          Value: true
+        left_flange:
+          Value: false
+        left_forearm_link:
+          Value: false
+        left_ft_frame:
+          Value: false
+        left_robotiq_85_base_link:
+          Value: false
+        left_robotiq_85_left_finger_link:
+          Value: false
+        left_robotiq_85_left_finger_tip_link:
+          Value: false
+        left_robotiq_85_left_inner_knuckle_link:
+          Value: false
+        left_robotiq_85_left_knuckle_link:
+          Value: false
+        left_robotiq_85_right_finger_link:
+          Value: false
+        left_robotiq_85_right_finger_tip_link:
+          Value: false
+        left_robotiq_85_right_inner_knuckle_link:
+          Value: false
+        left_robotiq_85_right_knuckle_link:
+          Value: false
+        left_shoulder_link:
+          Value: false
+        left_tool0:
+          Value: false
+        left_upper_arm_link:
+          Value: false
+        left_wrist_1_link:
+          Value: false
+        left_wrist_2_link:
+          Value: false
+        left_wrist_3_link:
+          Value: false
+        right_base:
+          Value: false
+        right_base_link:
+          Value: false
+        right_base_link_inertia:
+          Value: false
+        right_camera_baselink:
+          Value: false
+        right_camera_link:
+          Value: false
+        right_ee_link:
+          Value: true
+        right_flange:
+          Value: false
+        right_forearm_link:
+          Value: false
+        right_ft_frame:
+          Value: false
+        right_robotiq_85_base_link:
+          Value: false
+        right_robotiq_85_left_finger_link:
+          Value: false
+        right_robotiq_85_left_finger_tip_link:
+          Value: false
+        right_robotiq_85_left_inner_knuckle_link:
+          Value: false
+        right_robotiq_85_left_knuckle_link:
+          Value: false
+        right_robotiq_85_right_finger_link:
+          Value: false
+        right_robotiq_85_right_finger_tip_link:
+          Value: false
+        right_robotiq_85_right_inner_knuckle_link:
+          Value: false
+        right_robotiq_85_right_knuckle_link:
+          Value: false
+        right_shoulder_link:
+          Value: false
+        right_tool0:
+          Value: false
+        right_upper_arm_link:
+          Value: false
+        right_wrist_1_link:
+          Value: false
+        right_wrist_2_link:
+          Value: false
+        right_wrist_3_link:
+          Value: false
+        table_link:
+          Value: true
+        world:
+          Value: true
+      Marker Scale: 0.6000000238418579
+      Name: TF
+      Show Arrows: false
+      Show Axes: true
+      Show Names: false
+      Tree:
+        world:
+          table_link:
+            base_left:
+              left_base_link:
+                left_base:
+                  {}
+                left_base_link_inertia:
+                  left_shoulder_link:
+                    left_upper_arm_link:
+                      left_forearm_link:
+                        left_wrist_1_link:
+                          left_wrist_2_link:
+                            left_wrist_3_link:
+                              left_flange:
+                                left_tool0:
+                                  left_camera_baselink:
+                                    left_camera_link:
+                                      {}
+                                    left_robotiq_85_base_link:
+                                      left_robotiq_85_left_inner_knuckle_link:
+                                        {}
+                                      left_robotiq_85_left_knuckle_link:
+                                        left_robotiq_85_left_finger_link:
+                                          left_robotiq_85_left_finger_tip_link:
+                                            {}
+                                      left_robotiq_85_right_inner_knuckle_link:
+                                        {}
+                                      left_robotiq_85_right_knuckle_link:
+                                        left_robotiq_85_right_finger_link:
+                                          left_robotiq_85_right_finger_tip_link:
+                                            {}
+                                  left_ee_link:
+                                    {}
+                              left_ft_frame:
+                                {}
+            base_right:
+              right_base_link:
+                right_base:
+                  {}
+                right_base_link_inertia:
+                  right_shoulder_link:
+                    right_upper_arm_link:
+                      right_forearm_link:
+                        right_wrist_1_link:
+                          right_wrist_2_link:
+                            right_wrist_3_link:
+                              right_flange:
+                                right_tool0:
+                                  right_camera_baselink:
+                                    right_camera_link:
+                                      {}
+                                    right_robotiq_85_base_link:
+                                      right_robotiq_85_left_inner_knuckle_link:
+                                        {}
+                                      right_robotiq_85_left_knuckle_link:
+                                        right_robotiq_85_left_finger_link:
+                                          right_robotiq_85_left_finger_tip_link:
+                                            {}
+                                      right_robotiq_85_right_inner_knuckle_link:
+                                        {}
+                                      right_robotiq_85_right_knuckle_link:
+                                        right_robotiq_85_right_finger_link:
+                                          right_robotiq_85_right_finger_tip_link:
+                                            {}
+                                  right_ee_link:
+                                    {}
+                              right_ft_frame:
+                                {}
+      Update Interval: 0
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        Goal: true
+        Start: true
+        Text: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /cartesian_path_visualization
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -636,7 +828,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 3.556858777999878
+      Distance: 2.9536023139953613
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -651,10 +843,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.524999737739563
+      Pitch: 0.5199997425079346
       Target Frame: world
       Value: Orbit (rviz_default_plugins)
-      Yaw: 4.7201828956604
+      Yaw: 4.605185031890869
     Saved: ~
 Window Geometry:
   Displays:
@@ -668,9 +860,11 @@ Window Geometry:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001f300000301fc0200000005fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000100044006900730070006c006100790073010000003d000000c9000000c900fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067010000010c000001880000017d00fffffffb0000000800480065006c0070000000029a0000006e0000006e00fffffffb0000000a00560069006500770073010000029a000000a4000000a400ffffff000002c30000030100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000001f300000301fc0200000004fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000100044006900730070006c006100790073010000003d00000161000000c900fffffffc000001a40000019a0000019a0100001cfa000000020100000003fb00000024005200760069007a00560069007300750061006c0054006f006f006c00730047007500690100000000ffffffff0000016400fffffffb0000000a005600690065007700730100000000ffffffff0000010000fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000000000001f3000001f300fffffffb0000000800480065006c0070000000029a0000006e0000006e00ffffff000002f60000030100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  RvizVisualToolsGui:
+    collapsed: false
   Views:
     collapsed: false
-  Width: 1212
-  X: 2132
-  Y: 45
+  Width: 1263
+  X: 2296
+  Y: 42
