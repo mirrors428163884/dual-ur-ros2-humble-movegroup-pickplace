@@ -685,6 +685,176 @@ int to_joint_config(const rclcpp::Node::SharedPtr& node, const std::string &id, 
 
 
 
+
+/**
+ * @brief 仅旋转机械臂末端的最后一个关节（夹爪旋转轴）
+ * 
+ * 该函数通过获取当前真实关节状态，修改最后一个关节的角度，
+ * 然后进行关节空间规划来实现纯粹的“原地旋转”动作。
+ * 
+ * @param node ROS 2 节点指针
+ * @param arm_id 机械臂 ID ("left" 或 "right")
+ * @param rotate_deg 旋转角度（度），正数为逆时针，负数为顺时针
+ * @param speed 速度缩放因子 (0.0 - 1.0)
+ * @return int 0 表示成功，-1 表示失败
+ */
+int rotate_end_effector_joint(
+    const rclcpp::Node::SharedPtr& node,
+    const std::string& arm_id,
+    double rotate_deg,
+    double speed = 0.3)
+{
+    RCLCPP_INFO(LOGGER, "[rotate_end_effector_joint] 开始为机械臂 %s 执行末端旋转: %.2f°", arm_id.c_str(), rotate_deg);
+
+    // 1. 初始化 MoveGroup
+    auto move_group = std::make_shared<moveit::planning_interface::MoveGroupInterface>(node, arm_id);
+    auto robot_model = move_group->getRobotModel();
+    if (!robot_model) {
+        RCLCPP_ERROR(LOGGER, "无法获取 RobotModel!");
+        return -1;
+    }
+
+    // 2. 获取当前真实的关节状态 (复用 move_cartesian_offset 中的逻辑以确保准确性)
+    auto fetcher_node = rclcpp::Node::make_shared("rot_fetcher_" + arm_id);
+    auto qos_profile = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
+    sensor_msgs::msg::JointState::SharedPtr latest_state = nullptr;
+    std::mutex state_mutex;
+    
+    auto subscription = fetcher_node->create_subscription<sensor_msgs::msg::JointState>(
+        "/joint_states", qos_profile,
+        [&latest_state, &state_mutex](const sensor_msgs::msg::JointState::SharedPtr msg) {
+            std::lock_guard<std::mutex> lock(state_mutex);
+            latest_state = msg;
+        }
+    );
+
+    const std::vector<std::string>& joint_names = move_group->getActiveJoints();
+    auto start_time = fetcher_node->now();
+    
+    // 等待获取关节状态
+    while (rclcpp::ok() && (fetcher_node->now() - start_time).seconds() < 2.0) {
+        rclcpp::spin_some(fetcher_node);
+        if (latest_state) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    if (!latest_state) {
+        RCLCPP_ERROR(LOGGER, "超时未收到 /joint_states 数据，无法执行旋转!");
+        return -1;
+    }
+
+    // 提取关节值
+    std::vector<double> current_joint_values(joint_names.size(), 0.0);
+    for (size_t i = 0; i < joint_names.size(); ++i) {
+        bool found = false;
+        for (size_t j = 0; j < latest_state->name.size(); ++j) {
+            if (latest_state->name[j] == joint_names[i]) {
+                current_joint_values[i] = latest_state->position[j];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            RCLCPP_WARN(LOGGER, "关节 '%s' 未在 /joint_states 中找到，使用默认值 0.", joint_names[i].c_str());
+        }
+    }
+
+    // 3. 构建当前的 RobotState 并计算正向运动学 (FK) 以验证状态有效性
+    moveit::core::RobotStatePtr current_state(new moveit::core::RobotState(robot_model));
+    current_state->setToDefaultValues();
+    current_state->setJointGroupPositions(arm_id, current_joint_values);
+    current_state->update(); // 触发 FK 更新
+
+    // 4. 确定要旋转的关节 (假设是规划组中的最后一个关节)
+    if (joint_names.empty()) {
+        RCLCPP_ERROR(LOGGER, "机械臂 %s 没有活动关节!", arm_id.c_str());
+        return -1;
+    }
+
+    int target_joint_index = joint_names.size() - 1; // 最后一个关节
+    std::string target_joint_name = joint_names[target_joint_index];
+    
+    double current_angle_rad = current_joint_values[target_joint_index];
+    double rotate_rad = rotate_deg * M_PI / 180.0;
+    double target_angle_rad = current_angle_rad + rotate_rad;
+
+    RCLCPP_INFO(LOGGER, ">>> 准备旋转关节 [%s] (索引:%d)", target_joint_name.c_str(), target_joint_index);
+    RCLCPP_INFO(LOGGER, "    当前角度：%.2f° (%.4f rad)", current_angle_rad * 180.0 / M_PI, current_angle_rad);
+    RCLCPP_INFO(LOGGER, "    目标角度：%.2f° (%.4f rad)", target_angle_rad * 180.0 / M_PI, target_angle_rad);
+
+    // 5. 设置新的关节目标值
+    std::vector<double> target_joint_values = current_joint_values;
+    target_joint_values[target_joint_index] = target_angle_rad;
+
+    // 6. 配置 MoveGroup 进行规划
+    move_group->setMaxVelocityScalingFactor(speed);
+    move_group->setMaxAccelerationScalingFactor(speed);
+    move_group->setStartStateToCurrentState(); // 确保从当前真实状态开始
+    
+    if (!move_group->setJointValueTarget(target_joint_values)) {
+        RCLCPP_ERROR(LOGGER, "设置关节目标值失败 (可能超出限位)!");
+        return -1;
+    }
+
+    // 7. 执行规划
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    const size_t max_iter = 5;
+    moveit::core::MoveItErrorCode plan_ret;
+    
+    for (size_t i = 0; i < max_iter; ++i) {
+        plan_ret = move_group->plan(my_plan);
+        if (plan_ret == moveit::core::MoveItErrorCode::SUCCESS) {
+            break;
+        }
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (plan_ret != moveit::core::MoveItErrorCode::SUCCESS) {
+        RCLCPP_ERROR(LOGGER, "旋转路径规划失败!");
+        return -1;
+    }
+
+    RCLCPP_INFO(LOGGER, "路径规划成功，正在发送轨迹...");
+
+    // 8. 发送轨迹到控制器
+    std::string controller_name = (arm_id.find("left") != std::string::npos)
+        ? "/left_controller/follow_joint_trajectory"
+        : "/right_controller/follow_joint_trajectory";
+    
+    auto action_client = rclcpp_action::create_client<FollowJointTrajectory>(node, controller_name);
+    if (!action_client->wait_for_action_server(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(LOGGER, "动作服务器 %s 未响应!", controller_name.c_str());
+        return -1;
+    }
+
+    FollowJointTrajectory::Goal goal_msg;
+    goal_msg.trajectory = my_plan.trajectory_.joint_trajectory;
+    
+    auto send_goal_options = rclcpp_action::Client<FollowJointTrajectory>::SendGoalOptions();
+    send_goal_options.result_callback = [node, target_joint_name](const auto & result) {
+        switch (result.code) {
+            case rclcpp_action::ResultCode::SUCCEEDED:
+                RCLCPP_INFO(node->get_logger(), "✅ 关节 [%s] 旋转执行成功!", target_joint_name.c_str());
+                break;
+            case rclcpp_action::ResultCode::ABORTED:
+                RCLCPP_ERROR(node->get_logger(), "❌ 关节旋转执行被中止!");
+                break;
+            case rclcpp_action::ResultCode::CANCELED:
+                RCLCPP_ERROR(node->get_logger(), "❌ 关节旋转执行被取消!");
+                break;
+            default:
+                RCLCPP_ERROR(node->get_logger(), "❓ 未知结果码!");
+                break;
+        }
+    };
+
+    action_client->async_send_goal(goal_msg, send_goal_options);
+    RCLCPP_INFO(LOGGER, "旋转指令已发送。");
+    
+    return 0;
+}
+
+
 /**
  * @brief 控制指定机械臂的夹爪开合。
  *
@@ -1157,6 +1327,123 @@ int main(int argc, char **argv)
     }
     rclcpp::sleep_for(std::chrono::seconds(1));
 
+    // =========================================================================
+    // === 右臂整套运动流程开始 ===
+    // =========================================================================
+    RCLCPP_INFO(LOGGER, "========================================");
+    RCLCPP_INFO(LOGGER, ">>> 开始执行右臂 (Right Arm) 完整流程 <<<");
+    RCLCPP_INFO(LOGGER, "========================================");
+
+    std::string right_object_id = "target_plate_right_grasp"; 
+    
+    // --- 步骤 R0: 重新添加/更新碰撞体位置到桌面中心供右臂抓取 ---
+    // (因为左臂可能移动过或为了演示清晰，我们确保物体在右臂可达范围内)
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 重置桌面物体位置以供抓取...");
+    moveit_msgs::msg::CollisionObject co_right;
+    co_right.id = right_object_id;
+    co_right.header.frame_id = "table_link";
+    co_right.operation = moveit_msgs::msg::CollisionObject::ADD;
+    
+    shape_msgs::msg::SolidPrimitive box_right;
+    box_right.type = box_right.BOX;
+    box_right.dimensions = {0.04, 0.1, 0.1};
+    co_right.primitives.push_back(box_right);
+    
+    geometry_msgs::msg::Pose pose_right;
+    // 0.73915; -0.12652; 0.98945
+    pose_right.position.x = 0.73915;; 
+    pose_right.position.y = -0.12652;
+    pose_right.position.z = 0.1; // 桌面高度
+    pose_right.orientation.w = 1.0;
+    co_right.primitive_poses.push_back(pose_right);
+    
+    planning_scene_interface.applyCollisionObjects({co_right});
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+
+    // --- 步骤 R2: 笛卡尔路径接近物体 ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 执行笛卡尔路径接近物体 (向下移动 15cm)...");
+    // 注意：方向取决于你的坐标系定义，这里假设向下是负 Z 或正 Z，根据实际调整
+    // 假设当前在物体上方，需要向下移动去抓取
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.1, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔接近失败");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // --- 步骤 R3: 打开夹爪 ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 打开夹爪...");
+    if (control_gripper(move_group_node, RIGHT_ARM_ID, 1.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "[右臂] 打开夹爪失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2)); // 等待夹爪完全打开
+
+    // --- 步骤 R4: 附着物体 ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 尝试附着物体 '%s'...", right_object_id.c_str());
+    if (!attach_target_plate(move_group_node, RIGHT_ARM_ID, right_object_id)) {
+        RCLCPP_ERROR(LOGGER, "[右臂] 附着失败！后续动作可能会发生碰撞检测错误。");
+        // 即使附着失败，为了演示流程，我们也可以选择继续，或者在这里 return
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // --- 步骤 R5: 携带物体进行关节空间规划移动 (抬起) ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 携带物体抬起 (关节空间规划)...");
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 移动到right_pose1 (right_pose1)...");
+    if (to_srdf_NamedTarget(move_group_node, RIGHT_ARM_ID, "right_pose1", 0.3) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] right_pose1姿态规划失败，尝试继续...");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(5));
+
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 【特色步骤】执行关节空间规划：旋转夹爪 (Yaw 轴旋转 90 度)...");
+    RCLCPP_INFO(LOGGER, "[右臂] *** 执行末端关节纯旋转 (Yaw +90 度) ***");
+    if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, 90.0, 0.2) == 0) {
+        RCLCPP_INFO(LOGGER, "[右臂] 第一次旋转完成！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    RCLCPP_INFO(LOGGER, "[右臂] *** 执行末端关节纯旋转 (Yaw -180 度) ***");
+    if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, -180.0, 0.2) == 0) {
+        RCLCPP_INFO(LOGGER, "[右臂] 第二次旋转完成！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    
+    RCLCPP_INFO(LOGGER, "[右臂] *** 执行末端关节纯旋转 (Yaw +90 度 归位) ***");
+    if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, 90.0, 0.2) == 0) {
+        RCLCPP_INFO(LOGGER, "[右臂] 归位旋转完成！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    // ================================================================
+
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 执行笛卡尔路径接近物体 (向x移动 )...");
+    // 注意：方向取决于你的坐标系定义，这里假设向下是负 Z 或正 Z，根据实际调整
+    // 假设当前在物体上方，需要向下移动去抓取
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, -0.08, 0.0, 0.0, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔接近失败");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // --- 步骤 R7: 分离物体 ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 分离物体 '%s'...", right_object_id.c_str());
+    if (!detach_target_plate(move_group_node, RIGHT_ARM_ID, right_object_id)) {
+        RCLCPP_WARN(LOGGER, "[右臂] 分离失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // --- 步骤 R8: 关闭夹爪 (可选，整理姿态) ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 关闭夹爪...");
+    if (control_gripper(move_group_node, RIGHT_ARM_ID, 0.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "[右臂] 关闭夹爪失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // --- 步骤 R9: 回到安全姿态 (SRDF Named Target) ---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 回到安全姿态 (right_pose1)...");
+    if (to_srdf_NamedTarget(move_group_node, RIGHT_ARM_ID, "right_pose1", 0.3) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 回安全姿态失败");
+    }
+
+    RCLCPP_INFO(LOGGER, "========================================");
+    RCLCPP_INFO(LOGGER, ">>> 右臂全套流程执行完毕 <<<");
+    RCLCPP_INFO(LOGGER, "========================================");
 
 // === 步骤 3: 分离物体 ===
 rclcpp::sleep_for(std::chrono::seconds(5));
@@ -1237,6 +1524,16 @@ for (int i = 0; i <= animation_steps; ++i) {
 
 RCLCPP_INFO(LOGGER, ">>> 碰撞体 '%s' 下落动画完成，位于桌面高度 z=%.3f", object_id.c_str(), end_z);
 
+
+
+
+
+    // --- 步骤 R10: 清理场景 (删除右臂操作的物体副本，如果之前是新建的) ---
+    // 如果复用了全局 ID，这一步要小心不要删掉左臂还需要用的物体。
+    // 这里假设我们只是演示，删除这个特定的 ID
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 清理场景中的物体 '%s'...", right_object_id.c_str());
+    deleteCollisionObject(move_group_node, right_object_id);
+    rclcpp::sleep_for(std::chrono::seconds(1));
 
 
     RCLCPP_INFO(LOGGER, "所有测试完成。按 CTRL+C 退出。");

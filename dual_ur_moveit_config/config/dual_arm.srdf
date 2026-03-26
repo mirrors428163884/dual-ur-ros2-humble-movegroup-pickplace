@@ -135,7 +135,7 @@
         <joint name="right_wrist_3_joint" value="${radians(-208.73)}"/>
     </group_state>
 
-    <group_state name="right_pose1" group="right">
+    <!-- <group_state name="right_pose1" group="right">
         <joint name="right_shoulder_pan_joint" value="${radians(-37)}"/>
         
         <joint name="right_shoulder_lift_joint" value="${radians(215)}"/>
@@ -147,7 +147,18 @@
         <joint name="right_wrist_2_joint" value="${radians(37)}"/>
         
         <joint name="right_wrist_3_joint" value="0"/>
+    </group_state> -->
+
+    <group_state name="right_pose1" group="right">
+        <joint name="right_shoulder_pan_joint" value="2.0348"/>
+        <joint name="right_shoulder_lift_joint" value="-1.1075"/>
+        <joint name="right_elbow_joint" value="1.0699"/>
+        <joint name="right_wrist_1_joint" value="-3.1035"/>
+        <joint name="right_wrist_2_joint" value="4.2524"/>
+        <joint name="right_wrist_3_joint" value="-0.0001"/>
     </group_state>
+
+
 
     <group_state name="left_pose1" group="left">
         <joint name="left_shoulder_lift_joint" value="${radians(-60.95)}"/>
