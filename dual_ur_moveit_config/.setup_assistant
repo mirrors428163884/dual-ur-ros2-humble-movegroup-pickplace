@@ -5,8 +5,8 @@ moveit_setup_assistant_config:
   srdf:
     relative_path: config/dual_arm.srdf
   package_settings:
-    author_name: wang.yuanwen1
-    author_email: wang.yuanwen1@byd.com
+    author_name: one
+    author_email: one@one.com
     generated_timestamp: 1745218323
   control_xacro:
     command:

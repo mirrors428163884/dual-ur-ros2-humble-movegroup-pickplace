@@ -1,0 +1,60 @@
+# Build directories
+build/
+install/
+log/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+CMakeLists.txt.user
+
+# ROS 2 specific
+**/colcon_*
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Python cache - recursive ignore for all subdirectories
+__pycache__/
+**/__pycache__/
+*.pyc
+**/*.pyc
+*.pyo
+**/*.pyo
+*.pyd
+**/*.pyd
+
+# Logs and databases
+*.log
+**/*.log
+*.db
+**/*.db
+
+# Backup files
+*.bak
+**/*.bak
+*.tmp
+**/*.tmp
+
+# Environment files
+.env
+.venv/
+env/
+venv/
+
+# Cache directories in any subfolder
+**/cache/
+**/.cache/
+.cache/
+cache/
+

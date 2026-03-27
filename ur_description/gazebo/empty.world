@@ -56,7 +56,8 @@
           </geometry>
           <material>
             <script>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <uri>file:///home/gpu/simulate6666/0_world-launch/src/launchworld/media/materials/scripts/gazebo.material
+</uri>
               <name>Gazebo/Grey</name>
             </script>
           </material>
