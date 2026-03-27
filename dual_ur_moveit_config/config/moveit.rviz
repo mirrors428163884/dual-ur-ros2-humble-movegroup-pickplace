@@ -4,11 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /MotionPlanning1/Planning Metrics1
+        - /MotionPlanning1
         - /TF1
         - /TF1/Frames1
       Splitter Ratio: 0.5
-    Tree Height: 292
+    Tree Height: 281
   - Class: rviz_common/Help
     Name: Help
   - Class: rviz_common/Views
@@ -339,7 +339,7 @@ Visualization Manager:
         Interactive Marker Size: 0.10000000149011612
         Joint Violation Color: 255; 0; 255
         Planning Group: right_gripper
-        Query Goal State: true
+        Query Goal State: false
         Query Start State: false
         Show Workspace: false
         Start State Alpha: 1
@@ -606,7 +606,7 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-        Robot Alpha: 0.5
+        Robot Alpha: 1
         Show Robot Collision: false
         Show Robot Visual: true
       Value: true
@@ -800,9 +800,7 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        Goal: true
-        Start: true
-        Text: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -828,7 +826,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.9536023139953613
+      Distance: 4.647550582885742
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -843,10 +841,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5199997425079346
+      Pitch: 0.504999577999115
       Target Frame: world
       Value: Orbit (rviz_default_plugins)
-      Yaw: 4.605185031890869
+      Yaw: 4.46518611907959
     Saved: ~
 Window Geometry:
   Displays:
@@ -860,11 +858,11 @@ Window Geometry:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001f300000301fc0200000004fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000100044006900730070006c006100790073010000003d00000161000000c900fffffffc000001a40000019a0000019a0100001cfa000000020100000003fb00000024005200760069007a00560069007300750061006c0054006f006f006c00730047007500690100000000ffffffff0000016400fffffffb0000000a005600690065007700730100000000ffffffff0000010000fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000000000001f3000001f300fffffffb0000000800480065006c0070000000029a0000006e0000006e00ffffff000002f60000030100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000001f300000301fc0200000004fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000100044006900730070006c006100790073010000003d00000156000000c900fffffffc00000199000001a50000019a0100001cfa000000020100000003fb00000024005200760069007a00560069007300750061006c0054006f006f006c00730047007500690100000000ffffffff0000016400fffffffb0000000a005600690065007700730100000000ffffffff0000010000fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000000000001f3000001f300fffffffb0000000800480065006c0070000000029a0000006e0000006e00ffffff000002f60000030100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   RvizVisualToolsGui:
     collapsed: false
   Views:
     collapsed: false
   Width: 1263
-  X: 2296
-  Y: 42
+  X: 2182
+  Y: 44

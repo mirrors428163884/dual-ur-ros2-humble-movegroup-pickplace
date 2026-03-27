@@ -1172,61 +1172,50 @@ int move_cartesian_offset(
 }
 
 
+
 /**
- * @brief 主函数：初始化 ROS 2 上下文，执行双臂运动控制流程
+ * @brief 主函数：初始化 ROS 2 上下文，执行交错的双臂运动控制流程
+ *        包含：预抓取、笛卡尔接近、抓取附着、携带姿态、特色旋转、
+ *              新增右臂垂直笛卡尔移动、双物体分离与掉落动画。
  */
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
     RCLCPP_INFO(LOGGER, "开始启动 dual_move 节点...");
 
+    // --- 初始化节点和 TF ---
     rclcpp::NodeOptions node_options;
     node_options.automatically_declare_parameters_from_overrides(true);
     auto move_group_node = rclcpp::Node::make_shared("dual_move", node_options);
     move_group_node->set_parameter({"use_sim_time", true});
 
-    // === 关键步骤：加载 YAML 配置 ===
-    // 确保你的 launch 文件正确加载了 pick_object.yaml 到这个节点的命名空间
-    // 例如: parameters=[{'file_path_to_pick_object.yaml'}]
-    RCLCPP_INFO(LOGGER, "正在从参数服务器加载 YAML 配置...");
-    // 参数会在 load_collision_object_params 中被声明和读取
-
-    // === 创建全局的 TF Buffer 和 Listener ===
-    // 这必须在 executor 启动前完成，以确保 listener 能接收到消息。
+    // 创建全局的 TF Buffer 和 Listener
     auto tf_buffer = std::make_shared<tf2_ros::Buffer>(move_group_node->get_clock());
-    auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer, move_group_node);
-
+    auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(move_group_node);
-    std::thread([&executor]() { executor.spin(); }).detach();    
-    // 等待系统完全启动
-    rclcpp::sleep_for(std::chrono::seconds(5));
+    std::thread([&executor]() { executor.spin(); }).detach();
+    rclcpp::sleep_for(std::chrono::seconds(5)); // 等待系统完全启动
 
     const std::string LEFT_ARM_ID = "left";
     const std::string RIGHT_ARM_ID = "right";
 
     // === 打印初始状态 ===
-    // 修改调用，传入全局的 tf_buffer
     printCurrentJointStates(move_group_node, LEFT_ARM_ID, tf_buffer);
     printCurrentJointStates(move_group_node, RIGHT_ARM_ID, tf_buffer);
+    
+    // === 打印 TF 坐标系变换链 ===
+    RCLCPP_INFO(LOGGER, "=== 打印完整的 TF 坐标系变换链 ===");
+    RCLCPP_INFO(LOGGER, "所有已知坐标系:\n%s", tf_buffer->allFramesAsString().c_str());
+    std::vector<std::string> ee_links = {"left_ee_link", "right_ee_link"};
+    std::string source_frame = "world";
+    for (const auto& target_frame : ee_links) {
+        printTfChain(tf_buffer, LOGGER, target_frame, source_frame);
+    }
 
-    // // === 打印 TF 坐标系变换链 ===
-    // RCLCPP_INFO(LOGGER, "=== 打印完整的 TF 坐标系变换链 ===");
-    // RCLCPP_INFO(LOGGER, "所有已知坐标系:\n%s", tf_buffer->allFramesAsString().c_str());
-    // // 定义要查询的末端执行器链接
-    // std::vector<std::string> ee_links = {"left_ee_link", "right_ee_link"};
-    // std::string source_frame = "world";
-    // // 为每个末端执行器链接调用新函数
-    // for (const auto& target_frame : ee_links) {
-    //     printTfChain(tf_buffer, LOGGER, target_frame, source_frame);
-    // }
-
-
-
-
-    // === 步骤 0: 创建并添加 target_plate 作为世界物体 ===
-    RCLCPP_INFO(LOGGER, ">>> 正在创建并添加世界物体 ...");
+    // === 步骤 0: 创建并添加 target_plate 作为世界物体 (左臂目标) ===
+    RCLCPP_INFO(LOGGER, ">>> 正在创建并添加世界物体 (左臂目标)...");
     moveit_msgs::msg::CollisionObject co;
     if (!create_target_plate_collision_object(move_group_node, co)) {
         RCLCPP_ERROR(LOGGER, "创建世界物体失败！");
@@ -1235,168 +1224,144 @@ int main(int argc, char **argv)
 
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     planning_scene_interface.applyCollisionObjects({co});
-    rclcpp::sleep_for(std::chrono::seconds(2)); // 等待 RViz 更新
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
     RCLCPP_INFO(LOGGER, ">>> 世界物体 '%s' 添加成功。", co.id.c_str());
 
-    // === 移动到预抓取位置 ===
-    RCLCPP_INFO(LOGGER, ">>> 移动 %s 臂到预抓取位姿...", LEFT_ARM_ID.c_str());
+
+    // --- 阶段 7: 右臂附着物体（需要先创建一个新物体）---
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 重置桌面物体位置以供抓取...");
+    std::string right_object_id = "target_plate_right_grasp"; 
+    moveit_msgs::msg::CollisionObject co_right;
+    co_right.id = right_object_id;
+    co_right.header.frame_id = "table_link";
+    co_right.operation = moveit_msgs::msg::CollisionObject::ADD;
+    shape_msgs::msg::SolidPrimitive box_right;
+    box_right.type = box_right.BOX;
+    box_right.dimensions = {0.04, 0.1, 0.1};
+    co_right.primitives.push_back(box_right);
+    geometry_msgs::msg::Pose pose_right;
+    pose_right.position.x = 0.73915; 
+    pose_right.position.y = -0.12652;
+    pose_right.position.z = 0.1;
+    pose_right.orientation.w = 1.0;
+    co_right.primitive_poses.push_back(pose_right);
+    planning_scene_interface.applyCollisionObjects({co_right});
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // =========================================================================
+    // === 开始交错执行双臂操作 ===
+    // =========================================================================
+
+    // --- 阶段 1: 双臂同时移动到各自的预抓取位姿 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 左臂移动到预抓取位姿...");
     if (to_srdf_NamedTarget(move_group_node, LEFT_ARM_ID, "left_pre_grasp", 0.3) != 0) {
         RCLCPP_WARN(LOGGER, "%s 臂移动到预抓取位姿失败!", LEFT_ARM_ID.c_str());
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
-    RCLCPP_INFO(LOGGER, ">>> 移动 %s 臂到预抓取位姿...", RIGHT_ARM_ID.c_str());
+
+    RCLCPP_INFO(LOGGER, ">>> [交错] 右臂移动到预抓取位姿...");
     if (to_srdf_NamedTarget(move_group_node, RIGHT_ARM_ID, "right_pre_grasp", 0.3) != 0) {
         RCLCPP_WARN(LOGGER, "%s 臂移动到预抓取位姿失败!", RIGHT_ARM_ID.c_str());
     }
-    rclcpp::sleep_for(std::chrono::seconds(5));
-    // === 测试笛卡尔路径规划 ===
-    RCLCPP_INFO(LOGGER, ">>> 测试 %s 臂笛卡尔路径规划：沿Z轴向上移动5cm", LEFT_ARM_ID.c_str());
-    if (move_cartesian_offset(move_group_node, LEFT_ARM_ID, 0.0, 0.0, -0.1, 0.001, 0.0, 0.3, true, true) != 0) {
+    rclcpp::sleep_for(std::chrono::seconds(3));
+
+
+    // --- 阶段 4: 左臂打开夹爪 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 打开左夹爪...");
+    if (control_gripper(move_group_node, LEFT_ARM_ID, 1.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "打开 %s 夹爪失败！", LEFT_ARM_ID.c_str());
+    } else {
+        rclcpp::sleep_for(std::chrono::seconds(2));
+    }
+
+    // --- 阶段 5: 右臂打开夹爪 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 打开右夹爪...");
+    if (control_gripper(move_group_node, RIGHT_ARM_ID, 1.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "[右臂] 打开夹爪失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // --- 阶段 2: 左臂执行笛卡尔路径规划（向下接近物体）---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 测试左臂笛卡尔路径规划：沿 Z 轴向下移动 10cm");
+    if (move_cartesian_offset(move_group_node, LEFT_ARM_ID, 0.0, 0.0, -0.12, 0.001, 0.0, 0.3, true, true) != 0) {
         RCLCPP_WARN(LOGGER, "%s 臂笛卡尔路径规划执行失败", LEFT_ARM_ID.c_str());
     } else {
         rclcpp::sleep_for(std::chrono::seconds(2));
     }
 
-    rclcpp::sleep_for(std::chrono::seconds(4));
-    RCLCPP_INFO(LOGGER, ">>> 打开 %s 夹爪...", LEFT_ARM_ID.c_str());
-    if (control_gripper(move_group_node, LEFT_ARM_ID, 1.0) != 0) {
-        RCLCPP_ERROR(LOGGER, "打开 %s 夹爪失败！", LEFT_ARM_ID.c_str());
-    } else {
-        rclcpp::sleep_for(std::chrono::seconds(2)); // 等待动作完成
+    // --- 阶段 3: 右臂执行笛卡尔路径规划（向下接近物体）---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 测试右臂笛卡尔路径规划：沿 Z 轴向下移动 10cm");
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.14, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔接近失败");
     }
-    // === 步骤 1: 附着物体 ===
     rclcpp::sleep_for(std::chrono::seconds(2));
-    RCLCPP_INFO(LOGGER, "尝试附着物体 '%s' 到 %s 臂...", co.id.c_str(), LEFT_ARM_ID.c_str());
+
+    // --- 阶段 6: 左臂附着物体 ---
+    RCLCPP_INFO(LOGGER, "尝试附着物体 '%s' 到左臂...", co.id.c_str());
     if (!attach_target_plate(move_group_node, LEFT_ARM_ID, co.id)) {
         RCLCPP_ERROR(LOGGER, "附着失败！");
         return EXIT_FAILURE;
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
 
-    // // === 步骤 2: 携带物体移动 ===
-    // RCLCPP_INFO(LOGGER, "移动 %s 臂（携带 '%s'）到新位置...", LEFT_ARM_ID.c_str(), co.id.c_str());
-    // std::vector<double> carry_pose_deg = {80.0, -40.0, -90.0, -20.0, 90.0, 0.0};
-    // if (to_joint_config(move_group_node, LEFT_ARM_ID, carry_pose_deg, 0.3) != 0) {
-    //     RCLCPP_WARN(LOGGER, "携带平板移动失败");
-    // }
-    // rclcpp::sleep_for(std::chrono::seconds(3));
-
-    // // === 步骤 3: 分离物体 ===
-    // RCLCPP_INFO(LOGGER, "分离物体 '%s'...", co.id.c_str());
-    // if (!detach_target_plate(move_group_node, LEFT_ARM_ID, co.id)) {
-    //     RCLCPP_WARN(LOGGER, "分离失败！");
-    // }
-    // rclcpp::sleep_for(std::chrono::seconds(1));
-
-
-    rclcpp::sleep_for(std::chrono::seconds(5));
-    RCLCPP_INFO(LOGGER, ">>> 移动 %s 臂到预抓取位姿...", LEFT_ARM_ID.c_str());
-    if (to_srdf_NamedTarget(move_group_node, LEFT_ARM_ID, "left_pose1", 0.3) != 0) {
-        RCLCPP_WARN(LOGGER, "%s 臂移动到预抓取位姿失败!", LEFT_ARM_ID.c_str());
-    }
-    // === 新增：控制夹爪 ===
-    // 1. 打开夹爪 (开合比例 1.0)
-    rclcpp::sleep_for(std::chrono::seconds(4));
-    RCLCPP_INFO(LOGGER, ">>> 打开 %s 夹爪...", LEFT_ARM_ID.c_str());
-    if (control_gripper(move_group_node, LEFT_ARM_ID, 1.0) != 0) {
-        RCLCPP_ERROR(LOGGER, "打开 %s 夹爪失败！", LEFT_ARM_ID.c_str());
-    } else {
-        rclcpp::sleep_for(std::chrono::seconds(2)); // 等待动作完成
+    RCLCPP_INFO(LOGGER, ">>> [交错] 尝试附着物体 '%s' 到右臂...", right_object_id.c_str());
+    if (!attach_target_plate(move_group_node, RIGHT_ARM_ID, right_object_id)) {
+        RCLCPP_ERROR(LOGGER, "[右臂] 附着失败！");
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
-    // 2. 关闭夹爪 (开合比例 0.0)
-    RCLCPP_INFO(LOGGER, ">>> 关闭 %s 夹爪...", LEFT_ARM_ID.c_str());
-    if (control_gripper(move_group_node, LEFT_ARM_ID, 0.0) != 0) {
-        RCLCPP_ERROR(LOGGER, "关闭 %s 夹爪失败！", LEFT_ARM_ID.c_str());
+
+
+    RCLCPP_INFO(LOGGER, ">>> [交错] 设置为半开状态 (右臂)...");
+    if (control_gripper(move_group_node, RIGHT_ARM_ID, 0.5) != 0) {
+        RCLCPP_ERROR(LOGGER, "关闭 %s 夹爪失败！", RIGHT_ARM_ID.c_str());
     } else {
-        rclcpp::sleep_for(std::chrono::seconds(2)); // 等待动作完成
+        rclcpp::sleep_for(std::chrono::seconds(2));
     }
-    rclcpp::sleep_for(std::chrono::seconds(2));
-    // 3. 将夹爪设置为半开状态 (开合比例 0.5)
-    RCLCPP_INFO(LOGGER, ">>> 将 %s 夹爪设置为半开状态...", LEFT_ARM_ID.c_str());
-    if (control_gripper(move_group_node, LEFT_ARM_ID, 0.5) != 0) {
+
+    RCLCPP_INFO(LOGGER, ">>> [交错] 设置为半开状态 (左臂)...");
+    if (control_gripper(move_group_node, LEFT_ARM_ID, 0.58) != 0) {
         RCLCPP_ERROR(LOGGER, "设置 %s 夹爪半开状态失败！", LEFT_ARM_ID.c_str());
     } else {
-        rclcpp::sleep_for(std::chrono::seconds(2)); // 等待动作完成
+        rclcpp::sleep_for(std::chrono::seconds(2));
     }
-    // === 步骤 3: 分离物体 ===
     rclcpp::sleep_for(std::chrono::seconds(5));
-    RCLCPP_INFO(LOGGER, "分离物体 '%s'...", co.id.c_str());
-    if (!detach_target_plate(move_group_node, LEFT_ARM_ID, co.id)) {
-        RCLCPP_WARN(LOGGER, "分离失败！");
+
+
+    // --- 阶段 8: 左臂移动到携带姿态 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 移动左臂到 left_pose1 ...");
+    if (to_srdf_NamedTarget(move_group_node, LEFT_ARM_ID, "left_pose1", 0.3) != 0) {
+        RCLCPP_WARN(LOGGER, "%s 臂移动到携带位姿失败!", LEFT_ARM_ID.c_str());
     }
-    rclcpp::sleep_for(std::chrono::seconds(1));
+    rclcpp::sleep_for(std::chrono::seconds(4));
 
-    // =========================================================================
-    // === 右臂整套运动流程开始 ===
-    // =========================================================================
-    RCLCPP_INFO(LOGGER, "========================================");
-    RCLCPP_INFO(LOGGER, ">>> 开始执行右臂 (Right Arm) 完整流程 <<<");
-    RCLCPP_INFO(LOGGER, "========================================");
-
-    std::string right_object_id = "target_plate_right_grasp"; 
-    
-    // --- 步骤 R0: 重新添加/更新碰撞体位置到桌面中心供右臂抓取 ---
-    // (因为左臂可能移动过或为了演示清晰，我们确保物体在右臂可达范围内)
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 重置桌面物体位置以供抓取...");
-    moveit_msgs::msg::CollisionObject co_right;
-    co_right.id = right_object_id;
-    co_right.header.frame_id = "table_link";
-    co_right.operation = moveit_msgs::msg::CollisionObject::ADD;
-    
-    shape_msgs::msg::SolidPrimitive box_right;
-    box_right.type = box_right.BOX;
-    box_right.dimensions = {0.04, 0.1, 0.1};
-    co_right.primitives.push_back(box_right);
-    
-    geometry_msgs::msg::Pose pose_right;
-    // 0.73915; -0.12652; 0.98945
-    pose_right.position.x = 0.73915;; 
-    pose_right.position.y = -0.12652;
-    pose_right.position.z = 0.1; // 桌面高度
-    pose_right.orientation.w = 1.0;
-    co_right.primitive_poses.push_back(pose_right);
-    
-    planning_scene_interface.applyCollisionObjects({co_right});
-    rclcpp::sleep_for(std::chrono::seconds(1));
-
-
-    // --- 步骤 R2: 笛卡尔路径接近物体 ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 执行笛卡尔路径接近物体 (向下移动 15cm)...");
-    // 注意：方向取决于你的坐标系定义，这里假设向下是负 Z 或正 Z，根据实际调整
-    // 假设当前在物体上方，需要向下移动去抓取
-    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.1, 0.001, 0.0, 0.2, true, false) != 0) {
-        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔接近失败");
-    }
-    rclcpp::sleep_for(std::chrono::seconds(1));
-
-    // --- 步骤 R3: 打开夹爪 ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 打开夹爪...");
-    if (control_gripper(move_group_node, RIGHT_ARM_ID, 1.0) != 0) {
-        RCLCPP_ERROR(LOGGER, "[右臂] 打开夹爪失败！");
-    }
-    rclcpp::sleep_for(std::chrono::seconds(2)); // 等待夹爪完全打开
-
-    // --- 步骤 R4: 附着物体 ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 尝试附着物体 '%s'...", right_object_id.c_str());
-    if (!attach_target_plate(move_group_node, RIGHT_ARM_ID, right_object_id)) {
-        RCLCPP_ERROR(LOGGER, "[右臂] 附着失败！后续动作可能会发生碰撞检测错误。");
-        // 即使附着失败，为了演示流程，我们也可以选择继续，或者在这里 return
-    }
-    rclcpp::sleep_for(std::chrono::seconds(2));
-
-    // --- 步骤 R5: 携带物体进行关节空间规划移动 (抬起) ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 携带物体抬起 (关节空间规划)...");
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 移动到right_pose1 (right_pose1)...");
+    // --- 阶段 9: 右臂移动到携带姿态 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 移动右臂到 right_pose1 ...");
     if (to_srdf_NamedTarget(move_group_node, RIGHT_ARM_ID, "right_pose1", 0.3) != 0) {
-        RCLCPP_WARN(LOGGER, "[右臂] right_pose1姿态规划失败，尝试继续...");
+        RCLCPP_WARN(LOGGER, "[右臂] right_pose1 姿态规划失败，尝试继续...");
     }
     rclcpp::sleep_for(std::chrono::seconds(5));
 
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 【特色步骤】执行关节空间规划：旋转夹爪 (Yaw 轴旋转 90 度)...");
-    RCLCPP_INFO(LOGGER, "[右臂] *** 执行末端关节纯旋转 (Yaw +90 度) ***");
+    // =========================================================================
+    // === 新增步骤：右臂到达携带位后的垂直笛卡尔移动 (向上 -> 向下) ===
+    // =========================================================================
+    RCLCPP_INFO(LOGGER, ">>> [新增] 右臂执行垂直笛卡尔移动：向上提升 5cm");
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, 0.05, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 垂直向上移动失败");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(3));
+
+
+
+    // --- 阶段 11: 右臂执行特色旋转动作 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 【右臂特色步骤】执行末端关节纯旋转 (Yaw +90 度) ***");
     if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, 90.0, 0.2) == 0) {
         RCLCPP_INFO(LOGGER, "[右臂] 第一次旋转完成！");
+    }
+
+    // --- 阶段 13 (Part A): 左臂执行额外的笛卡尔移动 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] [左臂] 执行笛卡尔路径向 X 轴负方向移动...");
+    if (move_cartesian_offset(move_group_node, LEFT_ARM_ID, 0.08, 0.0, 0.0, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[左臂] 笛卡尔移动失败");
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
 
@@ -1405,138 +1370,161 @@ int main(int argc, char **argv)
         RCLCPP_INFO(LOGGER, "[右臂] 第二次旋转完成！");
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
-    
+
+    RCLCPP_INFO(LOGGER, ">>> [新增] 右臂执行垂直笛卡尔移动：向下复位 5cm");
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.05, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 垂直向下移动失败");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    // =========================================================================   
+
     RCLCPP_INFO(LOGGER, "[右臂] *** 执行末端关节纯旋转 (Yaw +90 度 归位) ***");
     if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, 90.0, 0.2) == 0) {
         RCLCPP_INFO(LOGGER, "[右臂] 归位旋转完成！");
     }
-    rclcpp::sleep_for(std::chrono::seconds(2));
-    // ================================================================
+    rclcpp::sleep_for(std::chrono::seconds(3));
 
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 执行笛卡尔路径接近物体 (向x移动 )...");
-    // 注意：方向取决于你的坐标系定义，这里假设向下是负 Z 或正 Z，根据实际调整
-    // 假设当前在物体上方，需要向下移动去抓取
+    // --- 阶段 13 (Part B): 右臂执行额外的笛卡尔移动 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] [右臂] 执行笛卡尔路径向 X 轴负方向移动...");
     if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, -0.08, 0.0, 0.0, 0.001, 0.0, 0.2, true, false) != 0) {
-        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔接近失败");
+        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔移动失败");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // --- 阶段 12: 左臂分离物体 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 分离左臂物体 '%s'...", co.id.c_str());
+    if (!detach_target_plate(move_group_node, LEFT_ARM_ID, co.id)) {
+        RCLCPP_WARN(LOGGER, "分离失败！");
     }
     rclcpp::sleep_for(std::chrono::seconds(1));
 
-    // --- 步骤 R7: 分离物体 ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 分离物体 '%s'...", right_object_id.c_str());
+
+    // --- 阶段 14: 右臂分离物体 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 分离右臂物体 '%s'...", right_object_id.c_str());
     if (!detach_target_plate(move_group_node, RIGHT_ARM_ID, right_object_id)) {
         RCLCPP_WARN(LOGGER, "[右臂] 分离失败！");
     }
     rclcpp::sleep_for(std::chrono::seconds(1));
 
-    // --- 步骤 R8: 关闭夹爪 (可选，整理姿态) ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 关闭夹爪...");
+    // --- 阶段 15: 右臂关闭夹爪 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 关闭右夹爪...");
     if (control_gripper(move_group_node, RIGHT_ARM_ID, 0.0) != 0) {
         RCLCPP_ERROR(LOGGER, "[右臂] 关闭夹爪失败！");
     }
     rclcpp::sleep_for(std::chrono::seconds(1));
 
-    // --- 步骤 R9: 回到安全姿态 (SRDF Named Target) ---
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 回到安全姿态 (right_pose1)...");
+    // --- 阶段 15: 左臂关闭夹爪 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 关闭左夹爪...");
+    if (control_gripper(move_group_node, LEFT_ARM_ID, 0.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "[左臂] 关闭夹爪失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(3));
+
+    // --- 阶段 13 (Part C): 右臂执行最后的笛卡尔移动 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] [右臂] 执行笛卡尔路径向 X 轴正方向回移...");
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.08, 0.0, 0.0, 0.001, 0.0, 0.2, true, false) != 0) {
+        RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔移动失败");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(3));
+
+
+    // === 清理场景中的原始碰撞体 ===
+    RCLCPP_INFO(LOGGER, ">>> 删除碰撞体 '%s' ...", co.id.c_str());
+    if (!deleteCollisionObject(move_group_node, co.id)) {
+        RCLCPP_WARN(LOGGER, "删除碰撞体失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    RCLCPP_INFO(LOGGER, ">>> [右臂] 清理场景中的物体 '%s'...", right_object_id.c_str());
+    deleteCollisionObject(move_group_node, right_object_id);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    // --- 阶段 16: 右臂回到安全姿态 ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 右臂回到安全姿态 (right_pose1)...");
     if (to_srdf_NamedTarget(move_group_node, RIGHT_ARM_ID, "right_pose1", 0.3) != 0) {
         RCLCPP_WARN(LOGGER, "[右臂] 回安全姿态失败");
     }
 
-    RCLCPP_INFO(LOGGER, "========================================");
-    RCLCPP_INFO(LOGGER, ">>> 右臂全套流程执行完毕 <<<");
-    RCLCPP_INFO(LOGGER, "========================================");
-
-// === 步骤 3: 分离物体 ===
-rclcpp::sleep_for(std::chrono::seconds(5));
-
-
-// === 新增：删除碰撞体 ===
-RCLCPP_INFO(LOGGER, ">>> 删除碰撞体 '%s' ...", co.id.c_str());
-if (!deleteCollisionObject(move_group_node, co.id)) {
-    RCLCPP_WARN(LOGGER, "删除碰撞体失败！");
-}
-rclcpp::sleep_for(std::chrono::seconds(2));
-
-
-// === 新增：创建下落动画效果（模拟物体逐步下落到桌面）===
-RCLCPP_INFO(LOGGER, ">>> 创建碰撞体 '%s' 下落动画到桌面...", co.id.c_str());
-
-// --- 直接定义新的碰撞体参数，不再从YAML加载 ---
-std::string object_id = "target_plate"; // 或者使用 co.id
-std::string frame_id = "world";
-std::vector<double> dimensions = {0.2, 0.2, 0.05}; // 长 x 宽 x 高 (可根据需要调整)
-geometry_msgs::msg::Pose original_pose;
-original_pose.position.x = -0.20;
-original_pose.position.y = 0.013152;
-original_pose.position.z = 1.3;
-// 设置一个默认朝向（单位四元数，表示无旋转）
-original_pose.orientation.x = 0.0;
-original_pose.orientation.y = 0.0;
-original_pose.orientation.z = 0.0;
-original_pose.orientation.w = 1.0;
-
-// --- 以下代码保持不变 ---
-// 设置下落参数
-double start_z = original_pose.position.z;
-double end_z = 0.78; // 桌面高度 + 物体半厚 (0.75 + 0.025)
-int animation_steps = 20; // 动画步数
-double step_delay_ms = 50.0; // 每步延迟毫秒
-
-// 确保起始位置高于结束位置
-if (start_z <= end_z) {
-    start_z = end_z + 0.1; // 添加小偏移量
-}
-
-// 执行下落动画
-moveit::planning_interface::PlanningSceneInterface planning_scene_interface_falling;
-for (int i = 0; i <= animation_steps; ++i) {
-    moveit_msgs::msg::CollisionObject falling_co;
-    falling_co.id = object_id; // 使用新定义的ID
-    falling_co.header.frame_id = frame_id;
-    falling_co.operation = moveit_msgs::msg::CollisionObject::ADD;
+    // === 创建下落动画效果（模拟两个物体逐步下落到桌面）===
+    RCLCPP_INFO(LOGGER, ">>> 创建碰撞体下落动画到桌面 (左臂物体 & 右臂物体)...");
     
-    // 创建几何形状
-    shape_msgs::msg::SolidPrimitive box;
-    box.type = box.BOX;
-    box.dimensions.resize(3);
-    box.dimensions[box.BOX_X] = dimensions[0];
-    box.dimensions[box.BOX_Y] = dimensions[1];
-    box.dimensions[box.BOX_Z] = dimensions[2];
-    falling_co.primitives.push_back(box);
+    // 配置左臂物体下落参数
+    std::string object_id_left = "target_plate";
+    std::string frame_id = "world";
+    std::vector<double> dimensions = {0.04, 0.1, 0.1};
+    geometry_msgs::msg::Pose original_pose_left;
+    original_pose_left.position.x = -0.20;
+    original_pose_left.position.y = 0.013152;
+    original_pose_left.position.z = 1.35; // 假设当前高度
+    original_pose_left.orientation.w = 1.0;
+
+    // 配置右臂物体下落参数
+    std::string object_id_right = "target_plate_right_grasp";
+    geometry_msgs::msg::Pose original_pose_right;
+    original_pose_right.position.x = 0.20;
+    original_pose_right.position.y = 0.013152;
+    original_pose_right.position.z = 1.35; // 假设当前高度
+    original_pose_right.orientation.w = 1.0;
+
+    double start_z = 1.35;
+    double end_z = 0.8; // 桌面高度
+    int animation_steps = 32;
+    double step_delay_ms = 50.0;
+
+    if (start_z <= end_z) {
+        start_z = end_z + 0.1;
+    }
+
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface_falling;
     
-    // 计算当前Z位置
-    double current_z = start_z - (start_z - end_z) * static_cast<double>(i) / animation_steps;
+    // 执行同步下落动画
+    for (int i = 0; i <= animation_steps; ++i) {
+        double current_z = start_z - (start_z - end_z) * static_cast<double>(i) / animation_steps;
+        
+        // 处理左臂物体
+        moveit_msgs::msg::CollisionObject falling_co_left;
+        falling_co_left.id = object_id_left;
+        falling_co_left.header.frame_id = frame_id;
+        falling_co_left.operation = moveit_msgs::msg::CollisionObject::ADD;
+        
+        shape_msgs::msg::SolidPrimitive box_left;
+        box_left.type = box_left.BOX;
+        box_left.dimensions.resize(3);
+        box_left.dimensions[box_left.BOX_X] = dimensions[0];
+        box_left.dimensions[box_left.BOX_Y] = dimensions[1];
+        box_left.dimensions[box_left.BOX_Z] = dimensions[2];
+        falling_co_left.primitives.push_back(box_left);
+        
+        geometry_msgs::msg::Pose current_pose_left = original_pose_left;
+        current_pose_left.position.z = current_z;
+        falling_co_left.primitive_poses.push_back(current_pose_left);
+        
+        // 处理右臂物体
+        moveit_msgs::msg::CollisionObject falling_co_right;
+        falling_co_right.id = object_id_right;
+        falling_co_right.header.frame_id = frame_id;
+        falling_co_right.operation = moveit_msgs::msg::CollisionObject::ADD;
+        
+        shape_msgs::msg::SolidPrimitive box_right_anim;
+        box_right_anim.type = box_right_anim.BOX;
+        box_right_anim.dimensions.resize(3);
+        box_right_anim.dimensions[box_right_anim.BOX_X] = dimensions[0];
+        box_right_anim.dimensions[box_right_anim.BOX_Y] = dimensions[1];
+        box_right_anim.dimensions[box_right_anim.BOX_Z] = dimensions[2];
+        falling_co_right.primitives.push_back(box_right_anim);
+        
+        geometry_msgs::msg::Pose current_pose_right = original_pose_right;
+        current_pose_right.position.z = current_z;
+        falling_co_right.primitive_poses.push_back(current_pose_right);
+
+        // 同时应用两个物体的更新
+        planning_scene_interface_falling.applyCollisionObjects({falling_co_left, falling_co_right});
+        rclcpp::sleep_for(std::chrono::milliseconds(static_cast<int>(step_delay_ms)));
+    }
     
-    // 设置当前位置 (X, Y 保持不变)
-    geometry_msgs::msg::Pose current_pose;
-    current_pose.position.x = original_pose.position.x;
-    current_pose.position.y = original_pose.position.y;
-    current_pose.position.z = current_z;
-    current_pose.orientation = original_pose.orientation; // 保持朝向不变
-    
-    falling_co.primitive_poses.push_back(current_pose);
-    
-    // 应用当前帧
-    planning_scene_interface_falling.applyCollisionObjects({falling_co});
-    
-    // 短暂延迟以创建动画效果
-    rclcpp::sleep_for(std::chrono::milliseconds(static_cast<int>(step_delay_ms)));
-}
+    RCLCPP_INFO(LOGGER, ">>> 碰撞体 '%s' 和 '%s' 下落动画完成，位于桌面高度 z=%.3f", 
+                object_id_left.c_str(), object_id_right.c_str(), end_z);
 
-RCLCPP_INFO(LOGGER, ">>> 碰撞体 '%s' 下落动画完成，位于桌面高度 z=%.3f", object_id.c_str(), end_z);
-
-
-
-
-
-    // --- 步骤 R10: 清理场景 (删除右臂操作的物体副本，如果之前是新建的) ---
-    // 如果复用了全局 ID，这一步要小心不要删掉左臂还需要用的物体。
-    // 这里假设我们只是演示，删除这个特定的 ID
-    RCLCPP_INFO(LOGGER, ">>> [右臂] 清理场景中的物体 '%s'...", right_object_id.c_str());
-    deleteCollisionObject(move_group_node, right_object_id);
-    rclcpp::sleep_for(std::chrono::seconds(1));
-
-
-    RCLCPP_INFO(LOGGER, "所有测试完成。按 CTRL+C 退出。");
+    RCLCPP_INFO(LOGGER, "交错双臂操作流程执行完毕。按 CTRL+C 退出。");
     
     rclcpp::Rate rate(0.5);
     while (rclcpp::ok()) { 
