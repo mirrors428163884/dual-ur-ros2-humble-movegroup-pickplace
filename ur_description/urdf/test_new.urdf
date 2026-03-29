@@ -110,7 +110,7 @@
 
   <ros2_control name="right" type="system">
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
     <joint name="right_shoulder_pan_joint">
       <command_interface name="position">
@@ -585,7 +585,7 @@
   </joint>
   <ros2_control name="left" type="system">
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
     <joint name="left_shoulder_pan_joint">
       <command_interface name="position">
@@ -1167,7 +1167,7 @@
   <ros2_control name="left_gripper" type="system">
     <!-- Plugins -->
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
     <!-- Joint interfaces -->
     <!-- With Ignition or Hardware, they handle mimic joints, so we only need this command interface activated -->
@@ -1429,7 +1429,7 @@
   <ros2_control name="right_gripper" type="system">
     <!-- Plugins -->
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
     <!-- Joint interfaces -->
     <!-- With Ignition or Hardware, they handle mimic joints, so we only need this command interface activated -->
@@ -1700,4 +1700,9 @@
     <child link="right_camera_baselink"/>
     <axis xyz="0 0 0"/>
   </joint>
+
+  <gazebo>
+  <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control::GazeboSystem">
+  </plugin>
+</gazebo>
 </robot>
