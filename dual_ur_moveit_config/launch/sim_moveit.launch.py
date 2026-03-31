@@ -130,63 +130,28 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
     
-    # def create_move_group_node(group_name, controller_file):
-    #     """move_group节点的工厂函数"""
-    #     return Node(
-    #         package="moveit_ros_move_group",
-    #         executable="move_group",
-    #         name=f"move_group_{group_name}",
-    #         # namespace=f"/{group_name}_namespace",  # 添加命名空间，避免冲突namespace=f"/{group_name}_namespace"
-    #         output="screen",
-    #         parameters=[
+
+
+    # # rviz with moveit configuration
+    # rviz_config_file = PathJoinSubstitution(
+    #     [FindPackageShare(moveit_config_package), "config", "moveit.rviz"]
+    # )
+    # rviz_node = Node(
+    #     package="rviz2",
+    #     condition=IfCondition(launch_rviz),
+    #     executable="rviz2",
+    #     name="rviz2_moveit",
+    #     output="log",
+    #     arguments=["-d", rviz_config_file],
+    #     parameters=[
     #         robot_description,
     #         robot_description_semantic,
+    #         ompl_planning_pipeline_config,
     #         robot_description_kinematics,
     #         robot_description_planning,
-    #         ompl_planning_pipeline_config,
-    #         trajectory_execution,
-    #         {
-    #             "moveit_simple_controller_manager": load_yaml(
-    #                 "dual_ur_moveit_config", 
-    #                 f"config/{controller_file}"
-    #             ),
-    #             "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
-    #             "move_group_name": group_name
-    #         },
-    #         planning_scene_monitor_parameters,
-    #         {"use_sim_time": use_sim_time},
     #         warehouse_ros_config,
     #     ],
     # )
-
-    # 创建三个独立的move_group节点
-    # move_group_node = [
-    #     create_move_group_node("left_arm", "left_controllers.yaml"),
-    #     create_move_group_node("right_arm", "right_controllers.yaml"),
-    #     create_move_group_node("dual_arm", "controllers.yaml")
-    # ]
-
-
-    # rviz with moveit configuration
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare(moveit_config_package), "config", "moveit.rviz"]
-    )
-    rviz_node = Node(
-        package="rviz2",
-        condition=IfCondition(launch_rviz),
-        executable="rviz2",
-        name="rviz2_moveit",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        parameters=[
-            robot_description,
-            robot_description_semantic,
-            ompl_planning_pipeline_config,
-            robot_description_kinematics,
-            robot_description_planning,
-            warehouse_ros_config,
-        ],
-    )
 
     # rviz with moveit configuration
     rviz_config_file = PathJoinSubstitution(
