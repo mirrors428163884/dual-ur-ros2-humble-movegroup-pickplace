@@ -1,5 +1,7 @@
 <sdf version='1.7'>
   <world name='default'>
+    
+    <!-- 原有的光源 -->
     <light name='sun' type='directional'>
       <cast_shadows>1</cast_shadows>
       <pose>0 0 10 0 -0 0</pose>
@@ -18,6 +20,57 @@
         <falloff>0</falloff>
       </spot>
     </light>
+
+    <!-- ================= START: YAML Defined Object ================= -->
+    <model name='target_plate1564897'>
+      <pose>-0.65637 -0.138 0.825 0 0 0</pose>
+      <static>0</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>0.04 0.1 0.1</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e+5</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <box>
+              <size>0.04 0.1 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.2 0.8 1</ambient>
+            <diffuse>0.2 0.2 0.8 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <inertial>
+          <mass>0.2</mass>
+          <inertia>
+            <ixx>0.00033</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.00017</iyy><iyz>0</iyz><izz>0.00017</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+    <!-- ================= END: YAML Defined Object ================= -->
+
+    <!-- 原有的地面模型 -->
     <model name='ground_plane'>
       <static>1</static>
       <link name='link'>
@@ -56,8 +109,7 @@
           </geometry>
           <material>
             <script>
-              <uri>file:///home/gpu/simulate6666/0_world-launch/src/launchworld/media/materials/scripts/gazebo.material
-</uri>
+              <uri>file:///home/gpu/simulate6666/0_world-launch/src/launchworld/media/materials/scripts/gazebo.material</uri>
               <name>Gazebo/Grey</name>
             </script>
           </material>
@@ -67,6 +119,7 @@
         <kinematic>0</kinematic>
       </link>
     </model>
+
     <gravity>0 0 -9.8</gravity>
     <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
     <atmosphere type='adiabatic'/>
@@ -91,6 +144,8 @@
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
+    
+    <!-- 状态部分通常由 Gazebo 自动生成或保存，保持原样即可 -->
     <state world_name='default'>
       <sim_time>53 261000000</sim_time>
       <real_time>53 330261615</real_time>
@@ -106,10 +161,12 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
+      <!-- 新物体也会在这里有状态记录，如果是手动编辑世界文件，可以暂时忽略或让 Gazebo 启动后自动生成 -->
       <light name='sun'>
         <pose>0 0 10 0 -0 0</pose>
       </light>
     </state>
+    
     <gui fullscreen='0'>
       <camera name='user_camera'>
         <pose>22.2954 -21.6908 8.5355 0 0.275643 2.35619</pose>

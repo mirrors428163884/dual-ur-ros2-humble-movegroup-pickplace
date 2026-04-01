@@ -35,7 +35,8 @@ ament_target_dependencies(
   motion_plan
   "moveit_ros_planning_interface"
   "rclcpp"
-  "moveit_visual_tools"
+  "control_msgs"
+  "moveit_visual_tools" 
   "eigen_stl_containers"
 )
 install(TARGETS motion_plan DESTINATION lib/${PROJECT_NAME})

@@ -175,7 +175,8 @@ def generate_launch_description():
 
     jointprinter_node = Node(
         package="motion_plan",
-        executable="jointprinter",
+        executable="motion_plan",
+        # executable="jointprinter",
         name="dual_move",
         output="screen",
         parameters=parameters,
