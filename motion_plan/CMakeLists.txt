@@ -16,6 +16,7 @@ find_package(moveit_ros_planning REQUIRED)
 find_package(moveit_servo REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(eigen_stl_containers REQUIRED) 
+find_package(linkattacher_msgs REQUIRED)
 
 # === 定义可执行文件 ===
 
@@ -38,6 +39,7 @@ ament_target_dependencies(
   "control_msgs"
   "moveit_visual_tools" 
   "eigen_stl_containers"
+  "linkattacher_msgs"
 )
 install(TARGETS motion_plan DESTINATION lib/${PROJECT_NAME})
 

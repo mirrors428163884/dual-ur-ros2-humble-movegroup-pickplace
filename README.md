@@ -44,3 +44,12 @@ ros2 run motion_plan jointprinter
 5. 用`movegroup`节点获取末端EEF位姿可能不如tf准确，因为`movegroupinterface`是局部机械臂的运动链
 
 6. 启动文件中的spawn_entity需要超时参数，否则会报错
+
+7. IFRA_LinkAttacher-humble的使用，注意添加cmakelists.txt的对其的依赖
+
+8. 
+    ```bash
+    linkattacher_msgs.srv.AttachLink_Response(success=True, message='ATTACHED: {MODEL , LINK} -> {dual_arm , left_robotiq_85_left_finger_tip_link} -- {target_plate1564897 , link}.')
+    ```
+    URDF 结构中，left_robotiq_85_base_link 是通过一个 fixed 关节连接到 left_camera_baselink 的。Gazebo 的物理引擎在构建模型时，有时会优化掉这种纯固定的、非主运动链上的链接，导致 Model::GetLink() API 无法找到它。
+    解决方案: 将附着点从夹爪的基座 (_base_link) 改为夹爪手指的尖端 (_finger_tip_link)。这些尖端链接是直接参与物理交互（碰撞和摩擦）的关键部分，因此 Gazebo 一定会将它们注册为有效的物理实体。

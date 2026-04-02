@@ -1401,7 +1401,13 @@
     <axis xyz="0 0 0"/>
   </joint>
 
-
+  <gazebo reference="left_robotiq_85_base_link">
+    <!-- No specific plugins needed here, just the reference is enough to register the link in Gazebo's physics engine. -->
+  </gazebo>
+  
+  <gazebo reference="right_robotiq_85_base_link">
+    <!-- No specific plugins needed here, just the reference is enough to register the link in Gazebo's physics engine. -->
+  </gazebo>
 
   <!-- START 虚拟 Mimic 关节定义 以下为完全孤立的虚拟结构，用于欺骗 MoveIt 认为这些关节存在  -->
   <!-- 1. 创建一个统一的虚拟根连杆，用于挂载所有修复用的假关节 -->

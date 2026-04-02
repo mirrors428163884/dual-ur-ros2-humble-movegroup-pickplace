@@ -20,7 +20,7 @@
         <falloff>0</falloff>
       </spot>
     </light>
-
+    <plugin name="gazebo_link_attacher" filename="libgazebo_link_attacher.so"/>
     <!-- ================= START: YAML Defined Object ================= -->
     <model name='target_plate1564897'>
       <pose>-0.65637 -0.138 0.825 0 0 0</pose>

@@ -26,7 +26,8 @@
 #include <rclcpp/parameter.hpp> // 确保包含此头文件
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <control_msgs/action/gripper_command.hpp>
-
+#include "linkattacher_msgs/srv/attach_link.hpp"
+#include "linkattacher_msgs/srv/detach_link.hpp"
 
 // 全局日志器
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("dual_move");
@@ -1325,6 +1326,50 @@ int main(int argc, char **argv)
     }
     rclcpp::sleep_for(std::chrono::seconds(5));
 
+    // === 调用 IFRA_LinkAttacher 服务进行物理附着 ===
+    RCLCPP_INFO(LOGGER, ">>> [交错] 调用 IFRA_LinkAttacher 附着左臂物体...");
+
+    // 1. 创建服务客户端
+    auto attach_client = move_group_node->create_client<linkattacher_msgs::srv::AttachLink>("/ATTACHLINK");
+
+    // 2. 等待服务可用
+    if (!attach_client->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(LOGGER, "/ATTACHLINK 服务不可用！");
+    } else {
+        // 3. 构建请求
+        auto request = std::make_shared<linkattacher_msgs::srv::AttachLink::Request>();
+        
+        // 根据您的 URDF 文件 (test_new.urdf)，机器人模型名为 "dual_arm"
+        request->model1_name = "dual_arm";
+        
+        // 根据您的代码习惯和 URDF 结构，使用 "left_robotiq_85_left_finger_tip_link" 作为末端执行器
+        request->link1_name = "left_robotiq_85_left_finger_tip_link";
+        
+        // 根据您的 Gazebo 世界文件 (empty.world)，物体模型名为 "target_plate1564897"
+        request->model2_name = "target_plate1564897";
+        
+        // 物体的 Link 名为 "link"
+        request->link2_name = "link";
+
+        // 4. 发送异步请求并处理结果
+        using ServiceResponseFuture = 
+            rclcpp::Client<linkattacher_msgs::srv::AttachLink>::SharedFuture;
+        
+        auto response_received_callback = [](ServiceResponseFuture future) {
+            auto response = future.get();
+            if (response->success) {
+                RCLCPP_INFO(LOGGER, "✅ 附着成功: %s", response->message.c_str());
+            } else {
+                RCLCPP_ERROR(LOGGER, "❌ 附着失败: %s", response->message.c_str());
+            }
+        };
+
+        attach_client->async_send_request(request, response_received_callback);
+    }
+
+    // 等待附着完成（可选，根据实际需求调整时间）
+    rclcpp::sleep_for(std::chrono::seconds(5));
+
 
     // --- 阶段 8: 左臂移动到携带姿态 ---
     RCLCPP_INFO(LOGGER, ">>> [交错] 移动左臂到 left_pose1 ...");
@@ -1404,6 +1449,56 @@ int main(int argc, char **argv)
     //     RCLCPP_WARN(LOGGER, "[右臂] 分离失败！");
     // }
     rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // --- 阶段 15: 右臂打开夹爪 (为分离做准备) ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 打开右夹爪 (准备分离)...");
+    if (control_gripper(move_group_node, RIGHT_ARM_ID, 1.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "[右臂] 打开夹爪失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // --- 阶段 15: 左臂打开夹爪 (为分离做准备) ---
+    RCLCPP_INFO(LOGGER, ">>> [交错] 打开左夹爪 (准备分离)...");
+    if (control_gripper(move_group_node, LEFT_ARM_ID, 1.0) != 0) {
+        RCLCPP_ERROR(LOGGER, "[左臂] 打开夹爪失败！");
+    }
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // === 调用 IFRA_LinkAttacher 服务进行物理分离 ===
+    RCLCPP_INFO(LOGGER, ">>> [交错] 调用 IFRA_LinkAttacher 分离左臂物体...");
+
+    // 1. 创建服务客户端
+    auto detach_client = move_group_node->create_client<linkattacher_msgs::srv::DetachLink>("/DETACHLINK");
+
+    // 2. 等待服务可用
+    if (!detach_client->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(LOGGER, "/DETACHLINK 服务不可用！");
+    } else {
+        // 3. 构建请求 (注意：参数需与 ATTACH 时完全一致)
+        auto request = std::make_shared<linkattacher_msgs::srv::DetachLink::Request>();
+        request->model1_name = "dual_arm";
+        request->link1_name = "left_robotiq_85_left_finger_tip_link";
+        request->model2_name = "target_plate1564897";
+        request->link2_name = "link";
+
+        // 4. 发送异步请求并处理结果
+        using ServiceResponseFuture = 
+            rclcpp::Client<linkattacher_msgs::srv::DetachLink>::SharedFuture;
+        
+        auto response_received_callback = [](ServiceResponseFuture future) {
+            auto response = future.get();
+            if (response->success) {
+                RCLCPP_INFO(LOGGER, "✅ 分离成功: %s", response->message.c_str());
+            } else {
+                RCLCPP_ERROR(LOGGER, "❌ 分离失败: %s", response->message.c_str());
+            }
+        };
+
+        detach_client->async_send_request(request, response_received_callback);
+    }
+
+    // 等待分离操作完成
+    rclcpp::sleep_for(std::chrono::seconds(3));
 
     // --- 阶段 15: 右臂关闭夹爪 ---
     RCLCPP_INFO(LOGGER, ">>> [交错] 关闭右夹爪...");
