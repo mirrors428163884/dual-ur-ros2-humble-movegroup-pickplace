@@ -1,55 +1,103 @@
-moveit assistant 、libmoveit.so库版本匹配问题解决：回退版本。
+# 项目 README.md 优化
+
+## 项目简介
+这是一个基于 ROS2 Humble 的机器人运动规划与控制系统，集成了 MoveIt! 运动规划框架和 Gazebo 仿真环境。
+
+## 依赖版本问题解决
+### Moveit Assistant 与 libmoveit.so 库版本匹配问题
+由于版本不兼容导致的问题，解决方案为回退到特定版本：
 
 ```bash
 wget http://snapshots.ros.org/humble/2025-06-18/ubuntu/pool/main/r/ros-humble-rviz-common/ros-humble-rviz-common_11.2.17-1jammy.20250617.234657_amd64.deb
 
 http://ec2-35-174-230-37.compute-1.amazonaws.com/humble/2024-12-05/ubuntu/pool/main/r/ros-humble-moveit-visual-tools/
 
-
 sudo dpkg -i ros-humble-rviz-common_11.2.17-1jammy.20250617.234657_amd64.deb
 ```
 
+## 构建与运行
 
-
-
-# build
+### 构建
 ```bash
 colcon build --cmake-args -DBUILD_TESTING=False --symlink-install
 ```
-# run
+
+### 运行
 ```bash
 source install/setup.bash
 
-
+# 启动 MoveIt 仿真环境
 ros2 launch dual_arm_moveit_config sim.launch.py
 
+# 启动 Gazebo 仿真
+ros2 launch dual_arm_moveit_config sim_moveit_gazebo_all.launch.py
 
+# 启动运动规划节点
 ros2 launch motion_plan motion_plan.launch.py
 
-
-ros2 run motion_plan jointprinter
 ```
 
-# bug点记录
-1. 注意gazebo显示模型必须`file://$(find ...)`而不是`package://`
+## 已知问题及解决方案
 
-2. 单独gazebo classic启动文件无需启动ros2 control node
+1. **Gazebo 模型路径格式** / *Gazebo model path format*
+   - 注意：Gazebo 显示模型必须使用 `file://$(find ...)` 而不是 `package://` / *Note: Gazebo display models must use `file://$(find ...)` instead of `package://`*
 
-3. 启动gazebo classic仿真时，需要添加`<gazebo>`标签的`<plugin>`标签的`<plugin filename="libgazebo_ros_control.so">`，`name`必须设置为`gazebo_ros_control`，
-必须加入控制器yaml文件
+2. **Gazebo Classic 单独启动** / *Gazebo Classic standalone launch*
+   - 单独 Gazebo Classic 启动文件无需启动 ROS2 Control Node / *Standalone Gazebo Classic launch files don't need to start ROS2 Control Node*
 
-4. gazebo和moveit共同启动，想正常模仿夹爪，夹爪的控制器在`ros2_control`必须有mimic的关联的joint，
-且需要在urdf中添加`<mimic>`的虚拟joint列表避免刷屏报错
+3. **Gazebo Classic 插件配置** / *Gazebo Classic plugin configuration*
+   - 启动 Gazebo Classic 仿真时，需要添加 `<gazebo>` 标签的 `<plugin>` 标签的 `<plugin filename="libgazebo_ros_control.so">`，[name](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/ur_hand_eye_calibration/flexbe_behavior_engine/flexbe_core/flexbe_core/behavior.py#L0-L0) 必须设置为 `gazebo_ros_control`，必须加入控制器 yaml 文件 / *When starting Gazebo Classic simulation, add `<plugin>` tag in `<gazebo>` with `<plugin filename="libgazebo_ros_control.so">`, the [name](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/ur_hand_eye_calibration/flexbe_behavior_engine/flexbe_core/flexbe_core/behavior.py#L0-L0) must be set to `gazebo_ros_control`, and controller yaml file must be included*
 
-5. 用`movegroup`节点获取末端EEF位姿可能不如tf准确，因为`movegroupinterface`是局部机械臂的运动链
+4. **Gazebo 与 MoveIt 联合启动** / *Gazebo and MoveIt combined launch*
+   - 想正常模拟夹爪，夹爪的控制器在 `ros2_control` 必须有 mimic 的关联的 joint，且需要在 urdf 中添加 `<mimic>` 的虚拟 joint 列表避免刷屏报错 / *To properly simulate grippers, gripper controllers in `ros2_control` must have mimic associated joints, and virtual joint lists with `<mimic>` need to be added in urdf to avoid spam errors*
 
-6. 启动文件中的spawn_entity需要超时参数，否则会报错
+5. **末端执行器位姿获取** / *End-effector pose acquisition*
+   - 用 `movegroup` 节点获取末端 EEF 位姿可能不如 tf 准确，因为 `movegroupinterface` 是局部机械臂的运动链 / *Acquiring end-effector pose using `movegroup` node may not be as accurate as tf, because `movegroupinterface` is a local arm kinematic chain*
 
-7. IFRA_LinkAttacher-humble的使用，注意添加cmakelists.txt的对其的依赖
+6. **启动文件超时参数** / *Launch file timeout parameter*
+   - 启动文件中的 spawn_entity 需要超时参数，否则会报错 / *The spawn_entity in launch files needs timeout parameter, otherwise it will throw error*
 
-8. 
-    ```bash
-    linkattacher_msgs.srv.AttachLink_Response(success=True, message='ATTACHED: {MODEL , LINK} -> {dual_arm , left_robotiq_85_left_finger_tip_link} -- {target_plate1564897 , link}.')
-    ```
-    URDF 结构中，left_robotiq_85_base_link 是通过一个 fixed 关节连接到 left_camera_baselink 的。Gazebo 的物理引擎在构建模型时，有时会优化掉这种纯固定的、非主运动链上的链接，导致 Model::GetLink() API 无法找到它。
-    解决方案: 将附着点从夹爪的基座 (_base_link) 改为夹爪手指的尖端 (_finger_tip_link)。这些尖端链接是直接参与物理交互（碰撞和摩擦）的关键部分，因此 Gazebo 一定会将它们注册为有效的物理实体。
+7. **IFRA_LinkAttacher-humble 依赖** / *IFRA_LinkAttacher-humble dependency*
+   - 注意添加 CMakeLists.txt 对其的依赖 / *Note to add its dependency in CMakeLists.txt*
+
+8. **Link Attacher 附着点问题** / *Link Attacher attachment point issue*
+   ```
+   linkattacher_msgs.srv.AttachLink_Response(
+     success=True, 
+     message='ATTACHED: {MODEL , LINK} -> {dual_arm , left_robotiq_85_left_finger_tip_link} -- {target_plate1564897 , link}.'
+   )
+   ```
+   URDF 结构中，[left_robotiq_85_base_link](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L350-L350) 是通过一个 fixed 关节连接到 [left_camera_baselink](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L348-L348) 的。Gazebo 的物理引擎在构建模型时，有时会优化掉这种纯固定的、非主运动链上的链接，导致 Model::GetLink() API 无法找到它。
+   
+   解决方案: 将附着点从夹爪的基座 (_base_link) 改为夹爪手指的尖端 (_finger_tip_link)。这些尖端链接是直接参与物理交互（碰撞和摩擦）的关键部分，因此 Gazebo 一定会将它们注册为有效的物理实体。
+   
+   / *In the URDF structure, [left_robotiq_85_base_link](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L350-L350) is connected to [left_camera_baselink](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L348-L348) through a fixed joint. The physics engine in Gazebo sometimes optimizes away these purely fixed links that are not on the main kinematic chain, causing the Model::GetLink() API to fail to find them.*
+   
+   / *Solution: Change the attachment point from the gripper base (_base_link) to the gripper finger tip (_finger_tip_link). These tip links are key parts that directly participate in physical interactions (collision and friction), so Gazebo will definitely register them as valid physical entities.*
+
+## 待办事项 / TODO
+
+- [ ] **双臂协同规划算法** / *Dual-arm cooperative planning algorithm*
+- [ ] **仿真与真实机器人切换** / *Switching between simulation and real robot*
+- [ ] **视觉感知模块集成** / *Visual perception module integration*
+- [ ] **轨迹平滑优化** / *Trajectory smoothing optimization*
+- [ ] **用户界面开发** / *User interface development*
+- [ ] **错误处理机制完善** / *Error handling mechanism improvement*
+- [ ] **性能监控工具** / *Performance monitoring tools*
+- [ ] **单元测试补充** / *Unit test supplementation*
+- [ ] **文档完善** / *Documentation completion*
+- [ ] **部署脚本自动化** / *Deployment script automation*
+
+## 版权声明 / Copyright Notice
+
+© 2026 [您的组织名称]. 保留所有权利. / *All rights reserved by [Your Organization Name], 2026*
+
+本项目遵循 Apache License 2.0 许可证. 详见 LICENSE 文件. / *This project follows Apache License 2.0. See LICENSE file for details.*
+
+第三方组件: / *Third-party components:*
+- ROS2 Humble Hawksbill
+- MoveIt! Motion Planning Framework
+- Gazebo Classic Simulator
+- Robotiq 85 Gripper Models
+
+联系方式: [your-email@example.com] / *Contact: [your-email@example.com]*

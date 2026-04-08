@@ -48,7 +48,7 @@ echo "启动 sim_moveit.launch.py ..."
 # 在后台启动第一个 launch 文件
 gnome-terminal --tab --title="Sim MoveIt Terminal" -- bash -c "
   source ./install/setup.bash;
-  ros2 launch dual_ur_moveit_config sim_moveit.launch.py use_sim_time:=true;
+  ros2 launch dual_ur_moveit_config sim_moveit_gazebo_all.launch.py;
   echo '';
   echo 'sim_moveit.launch.py 已结束';
   read -p '按 Enter 键关闭此窗口...'
