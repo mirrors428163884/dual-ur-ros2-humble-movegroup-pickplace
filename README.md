@@ -77,9 +77,9 @@ ros2 launch motion_plan motion_plan.launch.py
 
 ## 待办事项 / TODO
 
-- [ ] **双臂协同规划算法** / *Dual-arm cooperative planning algorithm*
-- [ ] **仿真与真实机器人切换** / *Switching between simulation and real robot*
-- [ ] **视觉感知模块集成** / *Visual perception module integration*
+- [x] **双臂协同规划算法** / *Dual-arm cooperative planning algorithm*
+- [x] **rviz和简单的gazebo仿真** / *RViz and basic Gazebo simulation*
+- [ ] **视觉感知模块集成（gazebo camera）** / *Vision perception module integration (Gazebo camera)*
 - [ ] **轨迹平滑优化** / *Trajectory smoothing optimization*
 - [ ] **用户界面开发** / *User interface development*
 - [ ] **错误处理机制完善** / *Error handling mechanism improvement*
@@ -88,16 +88,36 @@ ros2 launch motion_plan motion_plan.launch.py
 - [ ] **文档完善** / *Documentation completion*
 - [ ] **部署脚本自动化** / *Deployment script automation*
 
+
 ## 版权声明 / Copyright Notice
 
-© 2026 [您的组织名称]. 保留所有权利. / *All rights reserved by [Your Organization Name], 2026*
+© 2026 [mirrors]. 保留所有权利. / *All rights reserved by [Your Organization Name], 2026*
 
-本项目遵循 Apache License 2.0 许可证. 详见 LICENSE 文件. / *This project follows Apache License 2.0. See LICENSE file for details.*
+本项目遵循 GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3) 许可证. 详见 LICENSE 文件. / *This project follows GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3). See LICENSE file for details.*
 
-第三方组件: / *Third-party components:*
+### 许可证要点 / License Key Points:
+- **自由使用** / *Free to use*: 可以自由运行、研究、分享和修改软件 / *You can run, study, share, and modify the software*
+- **源码开放** / *Open source*: 分发修改版本时必须提供源码 / *Modified versions must include source code*
+- **相同许可** / *Same license*: 衍生作品必须使用相同的 GPLv3 许可证 / *Derivative works must be licensed under the same GPLv3*
+- **无担保** / *No warranty*: 软件按"原样"提供，无任何担保 / *Software is provided "as is", without warranty*
+
+### 第三方组件 / Third-party components:
 - ROS2 Humble Hawksbill
 - MoveIt! Motion Planning Framework
 - Gazebo Classic Simulator
 - Robotiq 85 Gripper Models
 
-联系方式: [your-email@example.com] / *Contact: [your-email@example.com]*
+### 联系方式 / Contact:
+[mirrors@您的邮箱地址] / *[mirrors@mirrors.com]*
+
+---
+
+<!-- **重要提醒**: 由于项目采用 GPLv3 许可证，任何基于此项目进行的修改或衍生作品都必须：
+1. 保持相同的 GPLv3 许可证
+2. 提供源代码访问权限
+3. 包含原始版权声明和许可证声明 -->
+
+*Important reminder: Since the project uses GPLv3 license, any modifications or derivative works based on this project must:*
+1. *Maintain the same GPLv3 license*
+2. *Provide source code access*
+3. *Include original copyright notices and license statements*
