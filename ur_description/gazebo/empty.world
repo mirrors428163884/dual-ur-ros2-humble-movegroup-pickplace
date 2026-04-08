@@ -21,11 +21,12 @@
       </spot>
     </light>
     <plugin name="gazebo_link_attacher" filename="libgazebo_link_attacher.so"/>
-    <!-- ================= START: YAML Defined Object ================= -->
+    
+    <!-- ================= START: YAML Defined Object (Original) ================= -->
     <model name='target_plate1564897'>
       <pose>-0.65637 -0.138 0.825 0 0 0</pose>
       <static>0</static>
-      <link name='link'>
+      <link name='link_left'>
         <collision name='collision'>
           <geometry>
             <box>
@@ -69,6 +70,110 @@
       </link>
     </model>
     <!-- ================= END: YAML Defined Object ================= -->
+
+    <!-- ================= START: NEW ADDED OBJECT ================= -->
+    <!-- 新物块：X 和 Y 不变，Z 轴抬高至 1.0 以防初始重叠，颜色改为红色以便区分 -->
+    <model name='target_plate_new'>
+      <pose>0.73915 -0.12652 0.825 0 0 0</pose>
+      <static>0</static>
+      <link name='link_right'>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>0.04 0.1 0.1</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e+5</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <box>
+              <size>0.04 0.1 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <!-- 红色材质 -->
+            <ambient>0.8 0.2 0.2 1</ambient>
+            <diffuse>0.8 0.2 0.2 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <inertial>
+          <mass>0.2</mass>
+          <inertia>
+            <ixx>0.00033</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.00017</iyy><iyz>0</iyz><izz>0.00017</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+    <!-- ================= END: NEW ADDED OBJECT ================= -->
+
+    <!-- ================= START: ADDED TABLE FROM URDF ================= -->
+    <model name='table_link'>
+      <!-- 对应 URDF 中 joint world_to_table 的 xyz="0 0 0.75" -->
+      <pose>0 0 0.75 0 0 0</pose>
+      <static>1</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>2.0 1.6 0.05</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>100</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e+5</kp>
+                <kd>100</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <box>
+              <size>2.0 1.6 0.05</size>
+            </box>
+          </geometry>
+          <material>
+            <!-- 对应 URDF 中 rgba="0.5 0.5 0.5 1.0" -->
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <inertial>
+          <!-- 对应 URDF 中 mass="10.0" -->
+          <mass>10.0</mass>
+          <inertia>
+            <ixx>1.0</ixx><ixy>0.0</ixy><ixz>0.0</ixz>
+            <iyy>1.0</iyy><iyz>0.0</iyz><izz>1.0</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+    <!-- ================= END: ADDED TABLE FROM URDF ================= -->
+
 
     <!-- 原有的地面模型 -->
     <model name='ground_plane'>

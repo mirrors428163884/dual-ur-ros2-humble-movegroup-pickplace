@@ -1,7 +1,8 @@
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, ExecuteProcess, RegisterEventHandler
 from launch.conditions import IfCondition
+from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -203,16 +204,44 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # 组合并返回所有节点
-    return [
-        gazebo,
-        robot_state_publisher,
-        gazebo_spawn_robot,
-    ] + controller_spawners + [
-        move_group_node,
-        rviz_node
-    ]
 
+
+    # 1. 定义最后启动的节点集合 (Gazebo, Spawn, Controllers, MoveGroup)
+    final_stage_nodes = [
+        gazebo,
+        gazebo_spawn_robot,
+        move_group_node
+    ] + controller_spawners
+
+    # 2. 创建事件：当 RViz 启动后，启动“最后阶段节点”
+    # 注意：如果 launch_rviz 为 false，RViz 不会启动，此事件不会触发。
+    # 必须启动 RViz。若需兼容无 RViz 模式，逻辑需更复杂（监听 RSP 直接触发最终节点）。
+
+    
+    trigger_final_stage = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=rviz_node,
+            on_start=final_stage_nodes,
+        )
+    )
+
+    # 3. 创建事件：当 RSP 启动后，启动 RViz
+    trigger_rviz_stage = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=robot_state_publisher,
+            on_start=[rviz_node],
+        )
+    )
+
+    # 4. 组合返回：
+    # 第一优先级：只返回 robot_state_publisher
+    # 第二优先级：通过 trigger_rviz_stage 等待 RSP 启动后拉起 RViz
+    # 第三优先级：通过 trigger_final_stage 等待 RViz 启动后拉起其余所有
+    return [
+        robot_state_publisher,
+        trigger_rviz_stage,
+        trigger_final_stage
+    ]
 
 def generate_launch_description():
     # 简明定义所有启动参数

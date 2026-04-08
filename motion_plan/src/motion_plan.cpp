@@ -1257,7 +1257,7 @@ int main(int argc, char **argv)
     if (to_srdf_NamedTarget(move_group_node, LEFT_ARM_ID, "left_pre_grasp", 0.3) != 0) {
         RCLCPP_WARN(LOGGER, "%s 臂移动到预抓取位姿失败!", LEFT_ARM_ID.c_str());
     }
-    rclcpp::sleep_for(std::chrono::seconds(2));
+    rclcpp::sleep_for(std::chrono::milliseconds(1500));
 
     RCLCPP_INFO(LOGGER, ">>> [交错] 右臂移动到预抓取位姿...");
     if (to_srdf_NamedTarget(move_group_node, RIGHT_ARM_ID, "right_pre_grasp", 0.3) != 0) {
@@ -1291,7 +1291,7 @@ int main(int argc, char **argv)
 
     // --- 阶段 3: 右臂执行笛卡尔路径规划（向下接近物体）---
     RCLCPP_INFO(LOGGER, ">>> [交错] 测试右臂笛卡尔路径规划：沿 Z 轴向下移动 10cm");
-    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.16, 0.001, 0.0, 0.2, true, false) != 0) {
+    if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.18, 0.001, 0.0, 0.2, true, false) != 0) {
         RCLCPP_WARN(LOGGER, "[右臂] 笛卡尔接近失败");
     }
     rclcpp::sleep_for(std::chrono::seconds(2));
@@ -1312,14 +1312,14 @@ int main(int argc, char **argv)
 
 
     RCLCPP_INFO(LOGGER, ">>> [交错] 设置为半开状态 (右臂)...");
-    if (control_gripper(move_group_node, RIGHT_ARM_ID, 0.42) != 0) {
+    if (control_gripper(move_group_node, RIGHT_ARM_ID, 0.5) != 0) {
         RCLCPP_ERROR(LOGGER, "关闭 %s 夹爪失败！", RIGHT_ARM_ID.c_str());
     } else {
         rclcpp::sleep_for(std::chrono::seconds(2));
     }
 
     RCLCPP_INFO(LOGGER, ">>> [交错] 设置为半开状态 (左臂)...");
-    if (control_gripper(move_group_node, LEFT_ARM_ID, 0.42) != 0) {
+    if (control_gripper(move_group_node, LEFT_ARM_ID, 0.5) != 0) {
         RCLCPP_ERROR(LOGGER, "设置 %s 夹爪半开状态失败！", LEFT_ARM_ID.c_str());
     } else {
         rclcpp::sleep_for(std::chrono::seconds(2));
@@ -1349,7 +1349,7 @@ int main(int argc, char **argv)
         request->model2_name = "target_plate1564897";
         
         // 物体的 Link 名为 "link"
-        request->link2_name = "link";
+        request->link2_name = "link_left";
 
         // 4. 发送异步请求并处理结果
         using ServiceResponseFuture = 
@@ -1368,6 +1368,50 @@ int main(int argc, char **argv)
     }
 
     // 等待附着完成（可选，根据实际需求调整时间）
+    rclcpp::sleep_for(std::chrono::seconds(2));
+
+    // === 调用 IFRA_LinkAttacher 服务进行右臂物理附着 ===
+    RCLCPP_INFO(LOGGER, ">>> [交错] 调用 IFRA_LinkAttacher 附着右臂物体 'target_plate_new'...");
+
+    // 1. 创建服务客户端（使用相同的客户端，或者创建新的）
+    auto attach_client_right = move_group_node->create_client<linkattacher_msgs::srv::AttachLink>("/ATTACHLINK");
+
+    // 2. 等待服务可用
+    if (!attach_client_right->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(LOGGER, "/ATTACHLINK 服务不可用！");
+    } else {
+        // 3. 构建请求
+        auto request_right = std::make_shared<linkattacher_msgs::srv::AttachLink::Request>();
+        
+        // 机器人模型名
+        request_right->model1_name = "dual_arm";
+        
+        // 右臂末端执行器
+        request_right->link1_name = "right_robotiq_85_left_finger_tip_link";
+        
+        // 右臂目标物体
+        request_right->model2_name = "target_plate_new";
+        
+        // 物体的 Link 名
+        request_right->link2_name = "link_right";
+
+        // 4. 发送异步请求并处理结果
+        using ServiceResponseFuture = 
+            rclcpp::Client<linkattacher_msgs::srv::AttachLink>::SharedFuture;
+        
+        auto response_received_callback = [](ServiceResponseFuture future) {
+            auto response = future.get();
+            if (response->success) {
+                RCLCPP_INFO(LOGGER, "✅ 右臂附着成功: %s", response->message.c_str());
+            } else {
+                RCLCPP_ERROR(LOGGER, "❌ 右臂附着失败: %s", response->message.c_str());
+            }
+        };
+
+        attach_client_right->async_send_request(request_right, response_received_callback);
+    }
+
+    // 等待右臂附着完成
     rclcpp::sleep_for(std::chrono::seconds(5));
 
 
@@ -1413,20 +1457,20 @@ int main(int argc, char **argv)
     if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, -180.0, 0.2) == 0) {
         RCLCPP_INFO(LOGGER, "[右臂] 第二次旋转完成！");
     }
-    rclcpp::sleep_for(std::chrono::seconds(2));
+    rclcpp::sleep_for(std::chrono::seconds(3));
 
     RCLCPP_INFO(LOGGER, ">>> [新增] 右臂执行垂直笛卡尔移动：向下复位 5cm");
     if (move_cartesian_offset(move_group_node, RIGHT_ARM_ID, 0.0, 0.0, -0.05, 0.001, 0.0, 0.2, true, false) != 0) {
         RCLCPP_WARN(LOGGER, "[右臂] 垂直向下移动失败");
     }
-    rclcpp::sleep_for(std::chrono::seconds(2));
+    rclcpp::sleep_for(std::chrono::seconds(3));
     // =========================================================================   
 
     RCLCPP_INFO(LOGGER, "[右臂] *** 执行末端关节纯旋转 (Yaw +90 度 归位) ***");
     if (rotate_end_effector_joint(move_group_node, RIGHT_ARM_ID, 90.0, 0.2) == 0) {
         RCLCPP_INFO(LOGGER, "[右臂] 归位旋转完成！");
     }
-    rclcpp::sleep_for(std::chrono::seconds(3));
+    rclcpp::sleep_for(std::chrono::seconds(5));
 
     // --- 阶段 13 (Part B): 右臂执行额外的笛卡尔移动 ---
     RCLCPP_INFO(LOGGER, ">>> [交错] [右臂] 执行笛卡尔路径向 X 轴负方向移动...");
@@ -1455,7 +1499,6 @@ int main(int argc, char **argv)
     if (control_gripper(move_group_node, RIGHT_ARM_ID, 1.0) != 0) {
         RCLCPP_ERROR(LOGGER, "[右臂] 打开夹爪失败！");
     }
-    rclcpp::sleep_for(std::chrono::seconds(2));
 
     // --- 阶段 15: 左臂打开夹爪 (为分离做准备) ---
     RCLCPP_INFO(LOGGER, ">>> [交错] 打开左夹爪 (准备分离)...");
@@ -1479,7 +1522,7 @@ int main(int argc, char **argv)
         request->model1_name = "dual_arm";
         request->link1_name = "left_robotiq_85_left_finger_tip_link";
         request->model2_name = "target_plate1564897";
-        request->link2_name = "link";
+        request->link2_name = "link_left";
 
         // 4. 发送异步请求并处理结果
         using ServiceResponseFuture = 
@@ -1498,6 +1541,42 @@ int main(int argc, char **argv)
     }
 
     // 等待分离操作完成
+    rclcpp::sleep_for(std::chrono::seconds(1));
+
+    // === 调用 IFRA_LinkAttacher 服务进行右臂物理分离 ===
+    RCLCPP_INFO(LOGGER, ">>> [交错] 调用 IFRA_LinkAttacher 分离右臂物体 'target_plate_new'...");
+
+    // 1. 创建服务客户端
+    auto detach_client_right = move_group_node->create_client<linkattacher_msgs::srv::DetachLink>("/DETACHLINK");
+
+    // 2. 等待服务可用
+    if (!detach_client_right->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(LOGGER, "/DETACHLINK 服务不可用！");
+    } else {
+        // 3. 构建请求 (注意：参数需与 ATTACH 时完全一致)
+        auto request_right = std::make_shared<linkattacher_msgs::srv::DetachLink::Request>();
+        request_right->model1_name = "dual_arm";
+        request_right->link1_name = "right_robotiq_85_left_finger_tip_link";
+        request_right->model2_name = "target_plate_new";
+        request_right->link2_name = "link_right";
+
+        // 4. 发送异步请求并处理结果
+        using ServiceResponseFuture = 
+            rclcpp::Client<linkattacher_msgs::srv::DetachLink>::SharedFuture;
+        
+        auto response_received_callback = [](ServiceResponseFuture future) {
+            auto response = future.get();
+            if (response->success) {
+                RCLCPP_INFO(LOGGER, "✅ 右臂分离成功: %s", response->message.c_str());
+            } else {
+                RCLCPP_ERROR(LOGGER, "❌ 右臂分离失败: %s", response->message.c_str());
+            }
+        };
+
+        detach_client_right->async_send_request(request_right, response_received_callback);
+    }
+
+    // 等待右臂分离操作完成
     rclcpp::sleep_for(std::chrono::seconds(3));
 
     // --- 阶段 15: 右臂关闭夹爪 ---
