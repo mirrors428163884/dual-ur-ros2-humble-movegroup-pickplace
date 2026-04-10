@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # ROS2 双终端一键启动脚本（带依赖检查版）
-# 作者微信：vvx1127vvx
 # 功能：先分析 src 下包的依赖，然后启动两个终端运行指定的 launch 文件
 
 # --- 第一部分：依赖分析 ---
@@ -55,8 +54,8 @@ gnome-terminal --tab --title="Sim MoveIt Terminal" -- bash -c "
 " &
 
 # 等待 2 秒 
-echo "等待 2 秒后启动 motion_plan.launch.py ..."
-sleep 2
+echo "等待 10 秒后启动 motion_plan.launch.py ..."
+sleep 10
 
 echo "启动 motion_plan.launch.py ..."
 # 打开新终端启动第二个 launch 文件

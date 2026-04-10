@@ -95,6 +95,25 @@ ament_target_dependencies(dual_arm_follower
 )
 install(TARGETS dual_arm_follower DESTINATION lib/${PROJECT_NAME})
 
+# 5. stack node
+add_executable(stack src/stack.cpp)
+target_include_directories(stack PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${eigen_stl_containers_INCLUDE_DIRS} 
+)
+ament_target_dependencies(
+  stack
+  "moveit_ros_planning_interface"
+  "rclcpp"
+  "control_msgs"
+  "moveit_visual_tools" 
+  "eigen_stl_containers"
+  "linkattacher_msgs"
+)
+install(TARGETS stack DESTINATION lib/${PROJECT_NAME})
+
+
 # === 安装目录 ===
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)

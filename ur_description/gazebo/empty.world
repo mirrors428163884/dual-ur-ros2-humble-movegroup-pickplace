@@ -24,7 +24,7 @@
     
     <!-- ================= START: YAML Defined Object (Original) ================= -->
     <model name='target_plate1564897'>
-      <pose>-0.65637 -0.138 0.825 0 0 0</pose>
+      <pose>-0.35637 -0.138 0.825 0 0 0</pose>
       <static>0</static>
       <link name='link_left'>
         <collision name='collision'>
@@ -74,7 +74,7 @@
     <!-- ================= START: NEW ADDED OBJECT ================= -->
     <!-- 新物块：X 和 Y 不变，Z 轴抬高至 1.0 以防初始重叠，颜色改为红色以便区分 -->
     <model name='target_plate_new'>
-      <pose>0.73915 -0.12652 0.825 0 0 0</pose>
+      <pose>0.43915 -0.12652 0.825 0 0 0</pose>
       <static>0</static>
       <link name='link_right'>
         <collision name='collision'>

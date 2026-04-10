@@ -1,4 +1,3 @@
-# 项目 README.md 优化
 
 ## 项目简介
 这是一个基于 ROS2 Humble 的机器人运动规划与控制系统，集成了 MoveIt! 运动规划框架和 Gazebo 仿真环境。

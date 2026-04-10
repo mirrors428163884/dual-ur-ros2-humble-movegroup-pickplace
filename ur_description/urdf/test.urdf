@@ -1,59 +1,5 @@
-<?xml version="1.0" ?>
-<robot name="dual_arm">
-  <!--
-    Base UR robot series xacro macro.
-
-    NOTE this is NOT a URDF. It cannot directly be loaded by consumers
-    expecting a flattened '.urdf' file. See the top-level '.xacro' for that
-    (but note that .xacro must still be processed by the xacro command).
-
-    This file models the base kinematic chain of a UR robot, which then gets
-    parameterised by various configuration files to convert it into a UR3(e),
-    UR5(e), UR10(e) or UR16e.
-
-    NOTE the default kinematic parameters (i.e., link lengths, frame locations,
-    offsets, etc) do not correspond to any particular robot. They are defaults
-    only. There WILL be non-zero offsets between the Forward Kinematics results
-    in TF (i.e., robot_state_publisher) and the values reported by the Teach
-    Pendant.
-
-    For accurate (and robot-specific) transforms, the 'kinematics_parameters_file'
-    parameter MUST point to a .yaml file containing the appropriate values for
-    the targeted robot.
-
-    If using the UniversalRobots/Universal_Robots_ROS_Driver, follow the steps
-    described in the readme of that repository to extract the kinematic
-    calibration from the controller and generate the required .yaml file.
-
-    Main author of the migration to yaml configs Ludovic Delval.
-
-    Contributors to previous versions (in no particular order)
-
-     - Denis Stogl
-     - Lovro Ivanov
-     - Felix Messmer
-     - Kelsey Hawkins
-     - Wim Meeussen
-     - Shaun Edwards
-     - Nadia Hammoudeh Garcia
-     - Dave Hershberger
-     - G. vd. Hoorn
-     - Philip Long
-     - Dave Coleman
-     - Miguel Prada
-     - Mathias Luedtke
-     - Marcel Schnirring
-     - Felix von Drigalski
-     - Felix Exner
-     - Jimmy Da Silva
-     - Ajit Krisshna N L
-     - Muhammad Asif Rana
-  -->
-  <!--
-    NOTE the macro defined in this file is NOT part of the public API of this
-          package. Users CANNOT rely on this file being available, or stored in
-          this location. Nor can they rely on the existence of the macro.
-  -->
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="dual_arm">
   <!-- create link fixed to the "world" -->
   <link name="world"/>
   <!-- Table link -->
@@ -86,6 +32,11 @@
     <origin rpy="0 0 0" xyz="0 0 0.75"/>
     <!-- 桌面高度设为 0.75m -->
   </joint>
+
+  <!-- Gazebo 参考标签 for table_link -->
+  <gazebo reference="table_link">
+  </gazebo>
+  
   <!-- Define base_right and base_left as children of table -->
   <link name="base_right"/>
   <link name="base_left"/>
@@ -102,107 +53,51 @@
     <!-- 左臂安装位置 -->
   </joint>
 
-
-
   <ros2_control name="right" type="system">
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
     <joint name="right_shoulder_pan_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.15</param>
-        <param name="max">3.15</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="right_shoulder_lift_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.15</param>
-        <param name="max">3.15</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="right_elbow_joint">
-      <command_interface name="position">
-        <param name="min">{-pi}</param>
-        <param name="max">{pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.15</param>
-        <param name="max">3.15</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="right_wrist_1_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.2</param>
-        <param name="max">3.2</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="right_wrist_2_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.2</param>
-        <param name="max">3.2</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="right_wrist_3_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.2</param>
-        <param name="max">3.2</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <sensor name="right_tcp_fts_sensor">
       <state_interface name="force.x"/>
@@ -212,129 +107,6 @@
       <state_interface name="torque.y"/>
       <state_interface name="torque.z"/>
     </sensor>
-    <!-- NOTE The following are joints used only for testing with fake hardware and will change in the future -->
-    <gpio name="right_speed_scaling">
-      <state_interface name="speed_scaling_factor"/>
-      <param name="initial_speed_scaling_factor">1</param>
-      <command_interface name="target_speed_fraction_cmd"/>
-      <command_interface name="target_speed_fraction_async_success"/>
-    </gpio>
-    <gpio name="right_gpio">
-      <command_interface name="standard_digital_output_cmd_0"/>
-      <command_interface name="standard_digital_output_cmd_1"/>
-      <command_interface name="standard_digital_output_cmd_2"/>
-      <command_interface name="standard_digital_output_cmd_3"/>
-      <command_interface name="standard_digital_output_cmd_4"/>
-      <command_interface name="standard_digital_output_cmd_5"/>
-      <command_interface name="standard_digital_output_cmd_6"/>
-      <command_interface name="standard_digital_output_cmd_7"/>
-      <command_interface name="standard_digital_output_cmd_8"/>
-      <command_interface name="standard_digital_output_cmd_9"/>
-      <command_interface name="standard_digital_output_cmd_10"/>
-      <command_interface name="standard_digital_output_cmd_11"/>
-      <command_interface name="standard_digital_output_cmd_12"/>
-      <command_interface name="standard_digital_output_cmd_13"/>
-      <command_interface name="standard_digital_output_cmd_14"/>
-      <command_interface name="standard_digital_output_cmd_15"/>
-      <command_interface name="standard_digital_output_cmd_16"/>
-      <command_interface name="standard_digital_output_cmd_17"/>
-      <command_interface name="standard_analog_output_cmd_0"/>
-      <command_interface name="standard_analog_output_cmd_1"/>
-      <command_interface name="tool_voltage_cmd"/>
-      <command_interface name="io_async_success"/>
-      <state_interface name="digital_output_0"/>
-      <state_interface name="digital_output_1"/>
-      <state_interface name="digital_output_2"/>
-      <state_interface name="digital_output_3"/>
-      <state_interface name="digital_output_4"/>
-      <state_interface name="digital_output_5"/>
-      <state_interface name="digital_output_6"/>
-      <state_interface name="digital_output_7"/>
-      <state_interface name="digital_output_8"/>
-      <state_interface name="digital_output_9"/>
-      <state_interface name="digital_output_10"/>
-      <state_interface name="digital_output_11"/>
-      <state_interface name="digital_output_12"/>
-      <state_interface name="digital_output_13"/>
-      <state_interface name="digital_output_14"/>
-      <state_interface name="digital_output_15"/>
-      <state_interface name="digital_output_16"/>
-      <state_interface name="digital_output_17"/>
-      <state_interface name="digital_input_0"/>
-      <state_interface name="digital_input_1"/>
-      <state_interface name="digital_input_2"/>
-      <state_interface name="digital_input_3"/>
-      <state_interface name="digital_input_4"/>
-      <state_interface name="digital_input_5"/>
-      <state_interface name="digital_input_6"/>
-      <state_interface name="digital_input_7"/>
-      <state_interface name="digital_input_8"/>
-      <state_interface name="digital_input_9"/>
-      <state_interface name="digital_input_10"/>
-      <state_interface name="digital_input_11"/>
-      <state_interface name="digital_input_12"/>
-      <state_interface name="digital_input_13"/>
-      <state_interface name="digital_input_14"/>
-      <state_interface name="digital_input_15"/>
-      <state_interface name="digital_input_16"/>
-      <state_interface name="digital_input_17"/>
-      <state_interface name="standard_analog_output_0"/>
-      <state_interface name="standard_analog_output_1"/>
-      <state_interface name="standard_analog_input_0"/>
-      <state_interface name="standard_analog_input_1"/>
-      <state_interface name="analog_io_type_0"/>
-      <state_interface name="analog_io_type_1"/>
-      <state_interface name="analog_io_type_2"/>
-      <state_interface name="analog_io_type_3"/>
-      <state_interface name="tool_mode"/>
-      <state_interface name="tool_output_voltage"/>
-      <state_interface name="tool_output_current"/>
-      <state_interface name="tool_temperature"/>
-      <state_interface name="tool_analog_input_0"/>
-      <state_interface name="tool_analog_input_1"/>
-      <state_interface name="tool_analog_input_type_0"/>
-      <state_interface name="tool_analog_input_type_1"/>
-      <state_interface name="robot_mode"/>
-      <state_interface name="robot_status_bit_0"/>
-      <state_interface name="robot_status_bit_1"/>
-      <state_interface name="robot_status_bit_2"/>
-      <state_interface name="robot_status_bit_3"/>
-      <state_interface name="safety_mode"/>
-      <state_interface name="safety_status_bit_0"/>
-      <state_interface name="safety_status_bit_1"/>
-      <state_interface name="safety_status_bit_2"/>
-      <state_interface name="safety_status_bit_3"/>
-      <state_interface name="safety_status_bit_4"/>
-      <state_interface name="safety_status_bit_5"/>
-      <state_interface name="safety_status_bit_6"/>
-      <state_interface name="safety_status_bit_7"/>
-      <state_interface name="safety_status_bit_8"/>
-      <state_interface name="safety_status_bit_9"/>
-      <state_interface name="safety_status_bit_10"/>
-      <state_interface name="program_running"/>
-    </gpio>
-    <gpio name="right_payload">
-      <command_interface name="mass"/>
-      <command_interface name="cog.x"/>
-      <command_interface name="cog.y"/>
-      <command_interface name="cog.z"/>
-      <command_interface name="payload_async_success"/>
-    </gpio>
-    <gpio name="right_resend_robot_program">
-      <command_interface name="resend_robot_program_cmd"/>
-      <command_interface name="resend_robot_program_async_success"/>
-    </gpio>
-    <gpio name="right_hand_back_control">
-      <command_interface name="hand_back_control_cmd"/>
-      <command_interface name="hand_back_control_async_success"/>
-    </gpio>
-    <gpio name="right_zero_ftsensor">
-      <command_interface name="zero_ftsensor_cmd"/>
-      <command_interface name="zero_ftsensor_async_success"/>
-    </gpio>
-    <gpio name="right_system_interface">
-      <state_interface name="initialized"/>
-    </gpio>
   </ros2_control>
   <!-- Add URDF transmission elements (for ros_control) -->
   <!--<xacro:ur_arm_transmission prefix="${prefix}" hw_interface="${transmission_hw_interface}" />-->
@@ -345,13 +117,13 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/base.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/base.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/base.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/base.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -364,13 +136,13 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/shoulder.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/shoulder.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/shoulder.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/shoulder.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -383,13 +155,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.12"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/upperarm.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/upperarm.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.12"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/upperarm.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/upperarm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -402,13 +174,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.027"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/forearm.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/forearm.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.027"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/forearm.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/forearm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -421,13 +193,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.104"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/wrist1.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/wrist1.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.104"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/wrist1.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/wrist1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -440,13 +212,13 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 -0.08535"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/wrist2.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/wrist2.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.08535"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/wrist2.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/wrist2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -459,13 +231,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.0921"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/wrist3.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/wrist3.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.0921"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/wrist3.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/wrist3.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -581,104 +353,51 @@
   </joint>
   <ros2_control name="left" type="system">
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
     <joint name="left_shoulder_pan_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.15</param>
-        <param name="max">3.15</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="left_shoulder_lift_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.15</param>
-        <param name="max">3.15</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="left_elbow_joint">
-      <command_interface name="position">
-        <param name="min">{-pi}</param>
-        <param name="max">{pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.15</param>
-        <param name="max">3.15</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="left_wrist_1_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.2</param>
-        <param name="max">3.2</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="left_wrist_2_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.2</param>
-        <param name="max">3.2</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
     <joint name="left_wrist_3_joint">
-      <command_interface name="position">
-        <param name="min">{-2*pi}</param>
-        <param name="max">{2*pi}</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-3.2</param>
-        <param name="max">3.2</param>
-      </command_interface>
+      <command_interface name="position"/>
       <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
         <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity"/>
-      <state_interface name="effort"/>
     </joint>
+    <!-- 可选：保留传感器（如果控制器或应用需要） -->
     <sensor name="left_tcp_fts_sensor">
       <state_interface name="force.x"/>
       <state_interface name="force.y"/>
@@ -687,130 +406,8 @@
       <state_interface name="torque.y"/>
       <state_interface name="torque.z"/>
     </sensor>
-    <!-- NOTE The following are joints used only for testing with fake hardware and will change in the future -->
-    <gpio name="left_speed_scaling">
-      <state_interface name="speed_scaling_factor"/>
-      <param name="initial_speed_scaling_factor">1</param>
-      <command_interface name="target_speed_fraction_cmd"/>
-      <command_interface name="target_speed_fraction_async_success"/>
-    </gpio>
-    <gpio name="left_gpio">
-      <command_interface name="standard_digital_output_cmd_0"/>
-      <command_interface name="standard_digital_output_cmd_1"/>
-      <command_interface name="standard_digital_output_cmd_2"/>
-      <command_interface name="standard_digital_output_cmd_3"/>
-      <command_interface name="standard_digital_output_cmd_4"/>
-      <command_interface name="standard_digital_output_cmd_5"/>
-      <command_interface name="standard_digital_output_cmd_6"/>
-      <command_interface name="standard_digital_output_cmd_7"/>
-      <command_interface name="standard_digital_output_cmd_8"/>
-      <command_interface name="standard_digital_output_cmd_9"/>
-      <command_interface name="standard_digital_output_cmd_10"/>
-      <command_interface name="standard_digital_output_cmd_11"/>
-      <command_interface name="standard_digital_output_cmd_12"/>
-      <command_interface name="standard_digital_output_cmd_13"/>
-      <command_interface name="standard_digital_output_cmd_14"/>
-      <command_interface name="standard_digital_output_cmd_15"/>
-      <command_interface name="standard_digital_output_cmd_16"/>
-      <command_interface name="standard_digital_output_cmd_17"/>
-      <command_interface name="standard_analog_output_cmd_0"/>
-      <command_interface name="standard_analog_output_cmd_1"/>
-      <command_interface name="tool_voltage_cmd"/>
-      <command_interface name="io_async_success"/>
-      <state_interface name="digital_output_0"/>
-      <state_interface name="digital_output_1"/>
-      <state_interface name="digital_output_2"/>
-      <state_interface name="digital_output_3"/>
-      <state_interface name="digital_output_4"/>
-      <state_interface name="digital_output_5"/>
-      <state_interface name="digital_output_6"/>
-      <state_interface name="digital_output_7"/>
-      <state_interface name="digital_output_8"/>
-      <state_interface name="digital_output_9"/>
-      <state_interface name="digital_output_10"/>
-      <state_interface name="digital_output_11"/>
-      <state_interface name="digital_output_12"/>
-      <state_interface name="digital_output_13"/>
-      <state_interface name="digital_output_14"/>
-      <state_interface name="digital_output_15"/>
-      <state_interface name="digital_output_16"/>
-      <state_interface name="digital_output_17"/>
-      <state_interface name="digital_input_0"/>
-      <state_interface name="digital_input_1"/>
-      <state_interface name="digital_input_2"/>
-      <state_interface name="digital_input_3"/>
-      <state_interface name="digital_input_4"/>
-      <state_interface name="digital_input_5"/>
-      <state_interface name="digital_input_6"/>
-      <state_interface name="digital_input_7"/>
-      <state_interface name="digital_input_8"/>
-      <state_interface name="digital_input_9"/>
-      <state_interface name="digital_input_10"/>
-      <state_interface name="digital_input_11"/>
-      <state_interface name="digital_input_12"/>
-      <state_interface name="digital_input_13"/>
-      <state_interface name="digital_input_14"/>
-      <state_interface name="digital_input_15"/>
-      <state_interface name="digital_input_16"/>
-      <state_interface name="digital_input_17"/>
-      <state_interface name="standard_analog_output_0"/>
-      <state_interface name="standard_analog_output_1"/>
-      <state_interface name="standard_analog_input_0"/>
-      <state_interface name="standard_analog_input_1"/>
-      <state_interface name="analog_io_type_0"/>
-      <state_interface name="analog_io_type_1"/>
-      <state_interface name="analog_io_type_2"/>
-      <state_interface name="analog_io_type_3"/>
-      <state_interface name="tool_mode"/>
-      <state_interface name="tool_output_voltage"/>
-      <state_interface name="tool_output_current"/>
-      <state_interface name="tool_temperature"/>
-      <state_interface name="tool_analog_input_0"/>
-      <state_interface name="tool_analog_input_1"/>
-      <state_interface name="tool_analog_input_type_0"/>
-      <state_interface name="tool_analog_input_type_1"/>
-      <state_interface name="robot_mode"/>
-      <state_interface name="robot_status_bit_0"/>
-      <state_interface name="robot_status_bit_1"/>
-      <state_interface name="robot_status_bit_2"/>
-      <state_interface name="robot_status_bit_3"/>
-      <state_interface name="safety_mode"/>
-      <state_interface name="safety_status_bit_0"/>
-      <state_interface name="safety_status_bit_1"/>
-      <state_interface name="safety_status_bit_2"/>
-      <state_interface name="safety_status_bit_3"/>
-      <state_interface name="safety_status_bit_4"/>
-      <state_interface name="safety_status_bit_5"/>
-      <state_interface name="safety_status_bit_6"/>
-      <state_interface name="safety_status_bit_7"/>
-      <state_interface name="safety_status_bit_8"/>
-      <state_interface name="safety_status_bit_9"/>
-      <state_interface name="safety_status_bit_10"/>
-      <state_interface name="program_running"/>
-    </gpio>
-    <gpio name="left_payload">
-      <command_interface name="mass"/>
-      <command_interface name="cog.x"/>
-      <command_interface name="cog.y"/>
-      <command_interface name="cog.z"/>
-      <command_interface name="payload_async_success"/>
-    </gpio>
-    <gpio name="left_resend_robot_program">
-      <command_interface name="resend_robot_program_cmd"/>
-      <command_interface name="resend_robot_program_async_success"/>
-    </gpio>
-    <gpio name="left_hand_back_control">
-      <command_interface name="hand_back_control_cmd"/>
-      <command_interface name="hand_back_control_async_success"/>
-    </gpio>
-    <gpio name="left_zero_ftsensor">
-      <command_interface name="zero_ftsensor_cmd"/>
-      <command_interface name="zero_ftsensor_async_success"/>
-    </gpio>
-    <gpio name="left_system_interface">
-      <state_interface name="initialized"/>
-    </gpio>
   </ros2_control>
+
   <!-- Add URDF transmission elements (for ros_control) -->
   <!--<xacro:ur_arm_transmission prefix="${prefix}" hw_interface="${transmission_hw_interface}" />-->
   <!-- Placeholder for ros2_control transmission which don't yet exist -->
@@ -820,13 +417,13 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/base.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/base.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/base.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/base.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -839,13 +436,13 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/shoulder.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/shoulder.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/shoulder.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/shoulder.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -858,13 +455,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.12"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/upperarm.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/upperarm.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.12"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/upperarm.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/upperarm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -877,13 +474,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.027"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/forearm.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/forearm.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.027"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/forearm.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/forearm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -896,13 +493,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.104"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/wrist1.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/wrist1.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.104"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/wrist1.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/wrist1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -915,13 +512,13 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 -0.08535"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/wrist2.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/wrist2.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.08535"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/wrist2.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/wrist2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -934,13 +531,13 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.0921"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/visual/wrist3.dae"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/visual/wrist3.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.0921"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur3e/collision/wrist3.stl"/>
+        <mesh filename="file://$(find ur_description)/meshes/ur3e/collision/wrist3.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1069,7 +666,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/left_camera_baselink.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/left_camera_baselink.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -1078,7 +675,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/left_camera_baselink.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/left_camera_baselink.STL"/>
       </geometry>
     </collision>
   </link>
@@ -1091,7 +688,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/left_camera_link.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/left_camera_link.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -1100,7 +697,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/left_camera_link.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/left_camera_link.STL"/>
       </geometry>
     </collision>
   </link>
@@ -1119,7 +716,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/right_camera_baselink.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/right_camera_baselink.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -1128,7 +725,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/right_camera_baselink.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/right_camera_baselink.STL"/>
       </geometry>
     </collision>
   </link>
@@ -1141,7 +738,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/right_camera_link.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/right_camera_link.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -1150,7 +747,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/camera/right_camera_link.STL"/>
+        <mesh filename="file://$(find ur_description)/meshes/camera/right_camera_link.STL"/>
       </geometry>
     </collision>
   </link>
@@ -1161,12 +758,10 @@
     <axis xyz="0 0 0"/>
   </joint>
   <ros2_control name="left_gripper" type="system">
-    <!-- Plugins -->
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
-    <!-- Joint interfaces -->
-    <!-- With Ignition or Hardware, they handle mimic joints, so we only need this command interface activated -->
+    <!-- 主驱动关节 -->
     <joint name="left_robotiq_85_left_knuckle_joint">
       <command_interface name="position"/>
       <state_interface name="position">
@@ -1174,16 +769,47 @@
       </state_interface>
       <state_interface name="velocity"/>
     </joint>
+    <!-- Mimic joints (no command_interface in Gazebo) -->
+    <joint name="left_robotiq_85_right_knuckle_joint">
+      <param name="mimic">left_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">-1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="left_robotiq_85_left_inner_knuckle_joint">
+      <param name="mimic">left_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="left_robotiq_85_right_inner_knuckle_joint">
+      <param name="mimic">left_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">-1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="left_robotiq_85_left_finger_tip_joint">
+      <param name="mimic">left_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">-1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="left_robotiq_85_right_finger_tip_joint">
+      <param name="mimic">left_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
   </ros2_control>
   <link name="left_robotiq_85_base_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/robotiq_base.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/robotiq_base.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/robotiq_base.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/robotiq_base.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1195,12 +821,12 @@
   <link name="left_robotiq_85_left_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1212,12 +838,12 @@
   <link name="left_robotiq_85_right_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1229,12 +855,12 @@
   <link name="left_robotiq_85_left_finger_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_finger.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_finger.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_finger.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_finger.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1246,12 +872,12 @@
   <link name="left_robotiq_85_right_finger_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_finger.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_finger.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_finger.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_finger.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1263,12 +889,12 @@
   <link name="left_robotiq_85_left_inner_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_inner_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_inner_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_inner_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_inner_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1280,12 +906,12 @@
   <link name="left_robotiq_85_right_inner_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_inner_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_inner_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_inner_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_inner_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1297,12 +923,12 @@
   <link name="left_robotiq_85_left_finger_tip_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_finger_tip.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_finger_tip.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_finger_tip.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_finger_tip.stl"/>
       </geometry>
       <surface>
         <friction>
@@ -1332,12 +958,12 @@
   <link name="left_robotiq_85_right_finger_tip_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_finger_tip.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_finger_tip.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_finger_tip.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_finger_tip.stl"/>
       </geometry>
       <surface>
         <friction>
@@ -1423,12 +1049,10 @@
     <mimic joint="left_robotiq_85_left_knuckle_joint"/>
   </joint>
   <ros2_control name="right_gripper" type="system">
-    <!-- Plugins -->
     <hardware>
-      <plugin>fake_components/GenericSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
-    <!-- Joint interfaces -->
-    <!-- With Ignition or Hardware, they handle mimic joints, so we only need this command interface activated -->
+    <!-- 主驱动关节 -->
     <joint name="right_robotiq_85_left_knuckle_joint">
       <command_interface name="position"/>
       <state_interface name="position">
@@ -1436,16 +1060,47 @@
       </state_interface>
       <state_interface name="velocity"/>
     </joint>
+    <!-- Mimic joints (no command_interface in Gazebo) -->
+    <joint name="right_robotiq_85_right_knuckle_joint">
+      <param name="mimic">right_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">-1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="right_robotiq_85_left_inner_knuckle_joint">
+      <param name="mimic">right_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="right_robotiq_85_right_inner_knuckle_joint">
+      <param name="mimic">right_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">-1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="right_robotiq_85_left_finger_tip_joint">
+      <param name="mimic">right_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">-1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="right_robotiq_85_right_finger_tip_joint">
+      <param name="mimic">right_robotiq_85_left_knuckle_joint</param>
+      <param name="multiplier">1</param>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
   </ros2_control>
   <link name="right_robotiq_85_base_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/robotiq_base.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/robotiq_base.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/robotiq_base.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/robotiq_base.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1457,12 +1112,12 @@
   <link name="right_robotiq_85_left_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1474,12 +1129,12 @@
   <link name="right_robotiq_85_right_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1491,12 +1146,12 @@
   <link name="right_robotiq_85_left_finger_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_finger.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_finger.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_finger.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_finger.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1508,12 +1163,12 @@
   <link name="right_robotiq_85_right_finger_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_finger.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_finger.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_finger.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_finger.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1525,12 +1180,12 @@
   <link name="right_robotiq_85_left_inner_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_inner_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_inner_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_inner_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_inner_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1542,12 +1197,12 @@
   <link name="right_robotiq_85_right_inner_knuckle_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_inner_knuckle.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_inner_knuckle.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_inner_knuckle.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_inner_knuckle.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1559,12 +1214,12 @@
   <link name="right_robotiq_85_left_finger_tip_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/left_finger_tip.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/left_finger_tip.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/left_finger_tip.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/left_finger_tip.stl"/>
       </geometry>
       <surface>
         <friction>
@@ -1594,12 +1249,12 @@
   <link name="right_robotiq_85_right_finger_tip_link">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/visual/2f_85/right_finger_tip.dae"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/visual/2f_85/right_finger_tip.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://robotiq_description/meshes/collision/2f_85/right_finger_tip.stl"/>
+        <mesh filename="file://$(find robotiq_description)/meshes/collision/2f_85/right_finger_tip.stl"/>
       </geometry>
       <surface>
         <friction>
@@ -1696,4 +1351,125 @@
     <child link="right_camera_baselink"/>
     <axis xyz="0 0 0"/>
   </joint>
+
+  <gazebo reference="left_robotiq_85_base_link">
+    <!-- No specific plugins needed here, just the reference is enough to register the link in Gazebo's physics engine. -->
+  </gazebo>
+  
+  <gazebo reference="right_robotiq_85_base_link">
+    <!-- No specific plugins needed here, just the reference is enough to register the link in Gazebo's physics engine. -->
+  </gazebo>
+
+  <!-- START 虚拟 Mimic 关节定义 以下为完全孤立的虚拟结构，用于欺骗 MoveIt 认为这些关节存在  -->
+  <!-- 1. 创建一个统一的虚拟根连杆，用于挂载所有修复用的假关节 -->
+  <link name="moveit_mimic_fix_dummy_root">
+    <visual>
+      <geometry>
+        <box size="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="transparent">
+        <color rgba="0 0 0 0"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- 2. 将这个统一根连杆固定到真实的 world 连杆上 (确保单根结构) -->
+  <joint name="moveit_mimic_fix_to_world" type="fixed">
+    <parent link="world"/>
+    <child link="moveit_mimic_fix_dummy_root"/>
+    <origin xyz="0 0 -10.0"/> 
+  </joint>
+
+  <!-- === Left Gripper Virtual Joints (挂在 dummy_root 下) === -->
+
+  <!-- 1. left_robotiq_85_right_knuckle_joint_mimic -->
+  <link name="dummy_child_l_r_knuckle"/>
+  <joint name="left_robotiq_85_right_knuckle_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_l_r_knuckle"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 2. left_robotiq_85_left_inner_knuckle_joint_mimic -->
+  <link name="dummy_child_l_l_inner"/>
+  <joint name="left_robotiq_85_left_inner_knuckle_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_l_l_inner"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 3. left_robotiq_85_right_inner_knuckle_joint_mimic -->
+  <link name="dummy_child_l_r_inner"/>
+  <joint name="left_robotiq_85_right_inner_knuckle_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_l_r_inner"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 4. left_robotiq_85_left_finger_tip_joint_mimic -->
+  <link name="dummy_child_l_l_tip"/>
+  <joint name="left_robotiq_85_left_finger_tip_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_l_l_tip"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 5. left_robotiq_85_right_finger_tip_joint_mimic -->
+  <link name="dummy_child_l_r_tip"/>
+  <joint name="left_robotiq_85_right_finger_tip_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_l_r_tip"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- === Right Gripper Virtual Joints (挂在 dummy_root 下) === -->
+
+  <!-- 6. right_robotiq_85_right_knuckle_joint_mimic -->
+  <link name="dummy_child_r_r_knuckle"/>
+  <joint name="right_robotiq_85_right_knuckle_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_r_r_knuckle"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 7. right_robotiq_85_left_inner_knuckle_joint_mimic -->
+  <link name="dummy_child_r_l_inner"/>
+  <joint name="right_robotiq_85_left_inner_knuckle_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_r_l_inner"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 8. right_robotiq_85_right_inner_knuckle_joint_mimic -->
+  <link name="dummy_child_r_r_inner"/>
+  <joint name="right_robotiq_85_right_inner_knuckle_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_r_r_inner"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 9. right_robotiq_85_left_finger_tip_joint_mimic -->
+  <link name="dummy_child_r_l_tip"/>
+  <joint name="right_robotiq_85_left_finger_tip_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_r_l_tip"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 10. right_robotiq_85_right_finger_tip_joint_mimic -->
+  <link name="dummy_child_r_r_tip"/>
+  <joint name="right_robotiq_85_right_finger_tip_joint_mimic" type="fixed">
+    <parent link="moveit_mimic_fix_dummy_root"/>
+    <child link="dummy_child_r_r_tip"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <!-- END 虚拟 Mimic 关节定义修正  -->
+
+
+<gazebo>
+  <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+    <parameters>$(find dual_ur_moveit_config)/config/ros2_controllers.yaml</parameters>
+  </plugin>
+</gazebo>
+
 </robot>
