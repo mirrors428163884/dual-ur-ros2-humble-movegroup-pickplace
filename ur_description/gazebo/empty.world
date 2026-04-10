@@ -175,6 +175,239 @@
     <!-- ================= END: ADDED TABLE FROM URDF ================= -->
 
 
+<!-- ================= START: FIVE-PART BOX CONTAINER WITH PURPLE BASE (UPDATED AGAIN) ================= -->
+<model name='five_part_box_container'>
+  <!-- 整体位置设置为Y=0.12，整体高度设置为 0.825，与现有物块对齐 -->
+  <pose>0 0.12 0.825 0 0 0</pose>
+  <static>1</static>
+  
+  <!-- 紫色底板 -->
+  <link name='base_plate'>
+    <pose>0 0 -0.005 0 0 0</pose> <!-- 底板厚度 0.01，所以 Z 坐标为 -0.005，使顶部在 Z=0.825 平面 -->
+    <collision name='collision_base'>
+      <geometry>
+        <box>
+          <size>0.3 0.3 0.01</size> <!-- 底板厚度改为 0.01m -->
+        </box>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>1.0</mu>
+            <mu2>1.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>1e+5</kp>
+            <kd>100</kd>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name='visual_base'>
+      <geometry>
+        <box>
+          <size>0.3 0.3 0.01</size>
+        </box>
+      </geometry>
+      <material>
+        <ambient>0.6 0.2 0.8 1</ambient>  <!-- 紫色 -->
+        <diffuse>0.6 0.2 0.8 1</diffuse>  <!-- 紫色 -->
+        <specular>0.2 0.2 0.2 1</specular>
+      </material>
+    </visual>
+    <inertial>
+      <mass>0.5</mass>
+      <inertia>
+        <ixx>0.005</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.005</iyy><iyz>0</iyz><izz>0.005</izz>
+      </inertia>
+    </inertial>
+  </link>
+  
+  <!-- 左侧墙壁 -->
+  <link name='left_wall'>
+    <pose>-0.15 0 0.005 0 0 0</pose> <!-- Z 坐标调整为 0.005，因为底板厚度变为 0.01 -->
+    <collision name='collision_left'>
+      <geometry>
+        <box>
+          <size>0.01 0.3 0.1</size> <!-- 墙壁厚度 0.01m，高度 0.1m -->
+        </box>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>1.0</mu>
+            <mu2>1.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>1e+5</kp>
+            <kd>100</kd>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name='visual_left'>
+      <geometry>
+        <box>
+          <size>0.01 0.3 0.1</size>
+        </box>
+      </geometry>
+      <material>
+        <ambient>0.5 0.5 0.5 1</ambient>
+        <diffuse>0.5 0.5 0.5 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </visual>
+    <inertial>
+      <mass>0.1</mass>
+      <inertia>
+        <ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz>
+      </inertia>
+    </inertial>
+  </link>
+  
+  <!-- 右侧墙壁 -->
+  <link name='right_wall'>
+    <pose>0.15 0 0.005 0 0 0</pose> <!-- Z 坐标调整为 0.005，因为底板厚度变为 0.01 -->
+    <collision name='collision_right'>
+      <geometry>
+        <box>
+          <size>0.01 0.3 0.1</size> <!-- 墙壁厚度 0.01m，高度 0.1m -->
+        </box>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>1.0</mu>
+            <mu2>1.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>1e+5</kp>
+            <kd>100</kd>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name='visual_right'>
+      <geometry>
+        <box>
+          <size>0.01 0.3 0.1</size>
+        </box>
+      </geometry>
+      <material>
+        <ambient>0.5 0.5 0.5 1</ambient>
+        <diffuse>0.5 0.5 0.5 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </visual>
+    <inertial>
+      <mass>0.1</mass>
+      <inertia>
+        <ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz>
+      </inertia>
+    </inertial>
+  </link>
+  
+  <!-- 前侧墙壁 -->
+  <link name='front_wall'>
+    <pose>0 -0.15 0.005 0 0 0</pose> <!-- Z 坐标调整为 0.005，因为底板厚度变为 0.01 -->
+    <collision name='collision_front'>
+      <geometry>
+        <box>
+          <size>0.3 0.01 0.1</size> <!-- 墙壁厚度 0.01m，高度 0.1m -->
+        </box>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>1.0</mu>
+            <mu2>1.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>1e+5</kp>
+            <kd>100</kd>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name='visual_front'>
+      <geometry>
+        <box>
+          <size>0.3 0.01 0.1</size>
+        </box>
+      </geometry>
+      <material>
+        <ambient>0.5 0.5 0.5 1</ambient>
+        <diffuse>0.5 0.5 0.5 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </visual>
+    <inertial>
+      <mass>0.1</mass>
+      <inertia>
+        <ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz>
+      </inertia>
+    </inertial>
+  </link>
+  
+  <!-- 后侧墙壁 -->
+  <link name='back_wall'>
+    <pose>0 0.15 0.005 0 0 0</pose> <!-- Z 坐标调整为 0.005，因为底板厚度变为 0.01 -->
+    <collision name='collision_back'>
+      <geometry>
+        <box>
+          <size>0.3 0.01 0.1</size> <!-- 墙壁厚度 0.01m，高度 0.1m -->
+        </box>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>1.0</mu>
+            <mu2>1.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>1e+5</kp>
+            <kd>100</kd>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name='visual_back'>
+      <geometry>
+        <box>
+          <size>0.3 0.01 0.1</size>
+        </box>
+      </geometry>
+      <material>
+        <ambient>0.5 0.5 0.5 1</ambient>
+        <diffuse>0.5 0.5 0.5 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </visual>
+    <inertial>
+      <mass>0.1</mass>
+      <inertia>
+        <ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>
+<!-- ================= END: FIVE-PART BOX CONTAINER WITH PURPLE BASE (UPDATED AGAIN) ================= -->
+
     <!-- 原有的地面模型 -->
     <model name='ground_plane'>
       <static>1</static>
