@@ -34,6 +34,8 @@ ros2 launch dual_arm_moveit_config sim_moveit_gazebo_all.launch.py
 # 启动运动规划节点
 ros2 launch motion_plan motion_plan.launch.py
 
+ros2 run motion_plan stack
+
 ```
 
 ## 已知问题及解决方案
@@ -45,7 +47,7 @@ ros2 launch motion_plan motion_plan.launch.py
    - 单独 Gazebo Classic 启动文件无需启动 ROS2 Control Node / *Standalone Gazebo Classic launch files don't need to start ROS2 Control Node*
 
 3. **Gazebo Classic 插件配置** / *Gazebo Classic plugin configuration*
-   - 启动 Gazebo Classic 仿真时，需要添加 `<gazebo>` 标签的 `<plugin>` 标签的 `<plugin filename="libgazebo_ros_control.so">`，[name](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/ur_hand_eye_calibration/flexbe_behavior_engine/flexbe_core/flexbe_core/behavior.py#L0-L0) 必须设置为 `gazebo_ros_control`，必须加入控制器 yaml 文件 / *When starting Gazebo Classic simulation, add `<plugin>` tag in `<gazebo>` with `<plugin filename="libgazebo_ros_control.so">`, the [name](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/ur_hand_eye_calibration/flexbe_behavior_engine/flexbe_core/flexbe_core/behavior.py#L0-L0) must be set to `gazebo_ros_control`, and controller yaml file must be included*
+   - 启动 Gazebo Classic 仿真时，需要添加 `<gazebo>` 标签的 `<plugin>` 标签的 `<plugin filename="libgazebo_ros_control.so">`，[name](ur_hand_eye_calibration/flexbe_behavior_engine/flexbe_core/flexbe_core/behavior.py#L0-L0) 必须设置为 `gazebo_ros_control`，必须加入控制器 yaml 文件 / *When starting Gazebo Classic simulation, add `<plugin>` tag in `<gazebo>` with `<plugin filename="libgazebo_ros_control.so">`, the [name](ur_hand_eye_calibration/flexbe_behavior_engine/flexbe_core/flexbe_core/behavior.py#L0-L0) must be set to `gazebo_ros_control`, and controller yaml file must be included*
 
 4. **Gazebo 与 MoveIt 联合启动** / *Gazebo and MoveIt combined launch*
    - 想正常模拟夹爪，夹爪的控制器在 `ros2_control` 必须有 mimic 的关联的 joint，且需要在 urdf 中添加 `<mimic>` 的虚拟 joint 列表避免刷屏报错 / *To properly simulate grippers, gripper controllers in `ros2_control` must have mimic associated joints, and virtual joint lists with `<mimic>` need to be added in urdf to avoid spam errors*
@@ -66,13 +68,25 @@ ros2 launch motion_plan motion_plan.launch.py
      message='ATTACHED: {MODEL , LINK} -> {dual_arm , left_robotiq_85_left_finger_tip_link} -- {target_plate1564897 , link}.'
    )
    ```
-   URDF 结构中，[left_robotiq_85_base_link](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L350-L350) 是通过一个 fixed 关节连接到 [left_camera_baselink](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L348-L348) 的。Gazebo 的物理引擎在构建模型时，有时会优化掉这种纯固定的、非主运动链上的链接，导致 Model::GetLink() API 无法找到它。
+   URDF 结构中，[left_robotiq_85_base_link](motion_plan/urdf/dual_arm_with_camera.xacro#L350-L350) 是通过一个 fixed 关节连接到 [left_camera_baselink](motion_plan/urdf/dual_arm_with_camera.xacro#L348-L348) 的。Gazebo 的物理引擎在构建模型时，有时会优化掉这种纯固定的、非主运动链上的链接，导致 Model::GetLink() API 无法找到它。
    
    解决方案: 将附着点从夹爪的基座 (_base_link) 改为夹爪手指的尖端 (_finger_tip_link)。这些尖端链接是直接参与物理交互（碰撞和摩擦）的关键部分，因此 Gazebo 一定会将它们注册为有效的物理实体。
    
-   / *In the URDF structure, [left_robotiq_85_base_link](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L350-L350) is connected to [left_camera_baselink](file:///home/gpu/dan_zi/planning_control-dec_demo_ur_dev/src/motion_plan/urdf/dual_arm_with_camera.xacro#L348-L348) through a fixed joint. The physics engine in Gazebo sometimes optimizes away these purely fixed links that are not on the main kinematic chain, causing the Model::GetLink() API to fail to find them.*
+   / *In the URDF structure, [left_robotiq_85_base_link](motion_plan/urdf/dual_arm_with_camera.xacro#L350-L350) is connected to [left_camera_baselink](motion_plan/urdf/dual_arm_with_camera.xacro#L348-L348) through a fixed joint. The physics engine in Gazebo sometimes optimizes away these purely fixed links that are not on the main kinematic chain, causing the Model::GetLink() API to fail to find them.*
    
    / *Solution: Change the attachment point from the gripper base (_base_link) to the gripper finger tip (_finger_tip_link). These tip links are key parts that directly participate in physical interactions (collision and friction), so Gazebo will definitely register them as valid physical entities.*
+
+9. **IFRA_LinkAttacher 重复附着限制** / *IFRA_LinkAttacher repeated attachment limitation*
+   - 问题：`IFRA_LinkAttacher` 的源码只能附着一次，即在已有一次附着成功后，不能接着再次使用附着，无论是再次附着其他 link 还是当前 link。/ *Issue: The `IFRA_LinkAttacher` source code can only attach once; after one successful attachment, it cannot be used again to attach, whether to another link or the current link.*
+   - 解决方案：需要修改源码 [IFRA_LinkAttacher-humble/ros2_LinkAttacher/src/gazebo_link_attacher.cpp](IFRA_LinkAttacher-humble/ros2_LinkAttacher/src/gazebo_link_attacher.cpp) / *Solution: Need to modify the source code at [IFRA_LinkAttacher-humble/ros2_LinkAttacher/src/gazebo_link_attacher.cpp](IFRA_LinkAttacher-humble/ros2_LinkAttacher/src/gazebo_link_attacher.cpp)*
+   - 影响：在连续操作场景中，如需要多次抓取和放置物体时会出现问题 / *Impact: Problems will occur in continuous operation scenarios, such as multiple pick-and-place operations*
+   - 临时解决方法：重启仿真环境以重置附着状态 / *Temporary workaround: Restart the simulation environment to reset the attachment state*
+
+10. **serial 包依赖关系** / *Serial package dependency*
+   - 依赖：`serial` 包被依赖于 `ros2_robotiq_gripper` / *Dependency: The `serial` package is required by `ros2_robotiq_gripper`*
+   - 用途：用于与 Robotiq 夹爪进行串口通信 / *Usage: Used for serial communication with Robotiq grippers*
+   - 注意：在安装和编译 `ros2_robotiq_gripper` 时必须确保 `serial` 包已正确安装 / *Note: Ensure the `serial` package is correctly installed when installing and compiling `ros2_robotiq_gripper`*
+   - 安装方法：`sudo apt-get install ros-humble-serial` 或从源码编译 / *Installation: `sudo apt-get install ros-humble-serial` or compile from source*
 
 ## 待办事项 / TODO
 
